@@ -1,39 +1,73 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import BottomNavBar from './components/BottomNavBar'; // Adjust the path if needed
+import Home from './home';
+// Placeholder screen components for each tab
+const HomeScreen: React.FC = () => <Home></Home>;
+const AnalyticsScreen: React.FC = () => <></>;
+const RefreshScreen: React.FC = () => <></>;
+const LayersScreen: React.FC = () => <></>;
+const ProfileScreen: React.FC = () => <></>;
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+const Tab = createBottomTabNavigator();
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
+const AppLayout: React.FC = () => {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+      <Tab.Navigator
+        tabBar={(props) => (
+          <BottomNavBar
+            onPressHome={() => props.navigation.navigate('Home')}
+            onPressAnalytics={() => props.navigation.navigate('Analytics')}
+            onPressRefresh={() => props.navigation.navigate('Refresh')}
+            onPressLayers={() => props.navigation.navigate('Layers')}
+            onPressProfile={() => props.navigation.navigate('Profile')}
+          />
+        )}
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: '#7C3AED',
+          },
+        }}
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            tabBarStyle: { backgroundColor: '#7C3AED' },
+          }}
+        />
+        <Tab.Screen
+          name="Analytics"
+          component={AnalyticsScreen}
+          options={{
+            tabBarStyle: { backgroundColor: '#7C3AED' },
+          }}
+        />
+        <Tab.Screen
+          name="Refresh"
+          component={RefreshScreen}
+          options={{
+            tabBarStyle: { backgroundColor: '#7C3AED' },
+          }}
+        />
+        <Tab.Screen
+          name="Layers"
+          component={LayersScreen}
+          options={{
+            tabBarStyle: { backgroundColor: '#7C3AED' },
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarStyle: { backgroundColor: '#7C3AED' },
+          }}
+        />
+      </Tab.Navigator>
   );
-}
+};
+
+export default AppLayout;
