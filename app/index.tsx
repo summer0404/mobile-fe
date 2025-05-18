@@ -1,16 +1,13 @@
+import { StatusBar, Text, View } from "react-native";
+import { Link } from "expo-router";
 import React from "react";
-import { Text, View } from "react-native";
 
 export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
+    <View className="flex-1 items-center justify-center bg-white"
     >
-      <Text>Smart Financial Tracking Application</Text>
+      <Text className="text-3xl font-pblack" >Summer</Text>
+      <Link href='/home' style={{ color: 'blue' }}>Go to Home</Link>
     </View>
   );
 }

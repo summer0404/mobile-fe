@@ -1,73 +1,40 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import BottomNavBar from './components/BottomNavBar'; // Adjust the path if needed
-import Home from './home';
-// Placeholder screen components for each tab
-const HomeScreen: React.FC = () => <Home></Home>;
-const AnalyticsScreen: React.FC = () => <></>;
-const RefreshScreen: React.FC = () => <></>;
-const LayersScreen: React.FC = () => <></>;
-const ProfileScreen: React.FC = () => <></>;
+import "../global.css"
+import { StyleSheet, Text, View } from 'react-native'
+import React from 'react'
+import { Slot, SplashScreen, Stack } from 'expo-router'
+import { useFonts } from 'expo-font'
+import { useEffect } from 'react'
 
-const Tab = createBottomTabNavigator();
+SplashScreen.preventAutoHideAsync();
 
-const AppLayout: React.FC = () => {
-  return (
-      <Tab.Navigator
-        tabBar={(props) => (
-          <BottomNavBar
-            onPressHome={() => props.navigation.navigate('Home')}
-            onPressAnalytics={() => props.navigation.navigate('Analytics')}
-            onPressRefresh={() => props.navigation.navigate('Refresh')}
-            onPressLayers={() => props.navigation.navigate('Layers')}
-            onPressProfile={() => props.navigation.navigate('Profile')}
-          />
-        )}
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: '#7C3AED',
-          },
-        }}
-      >
-        <Tab.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            tabBarStyle: { backgroundColor: '#7C3AED' },
-          }}
-        />
-        <Tab.Screen
-          name="Analytics"
-          component={AnalyticsScreen}
-          options={{
-            tabBarStyle: { backgroundColor: '#7C3AED' },
-          }}
-        />
-        <Tab.Screen
-          name="Refresh"
-          component={RefreshScreen}
-          options={{
-            tabBarStyle: { backgroundColor: '#7C3AED' },
-          }}
-        />
-        <Tab.Screen
-          name="Layers"
-          component={LayersScreen}
-          options={{
-            tabBarStyle: { backgroundColor: '#7C3AED' },
-          }}
-        />
-        <Tab.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            tabBarStyle: { backgroundColor: '#7C3AED' },
-          }}
-        />
-      </Tab.Navigator>
-  );
-};
+const RootLayout = () => {
+  const [fontsLoaded, error] = useFonts({
+    "Poppins-Black": require("../assets/fonts/Poppins-Black.ttf"),
+    "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
+    "Poppins-ExtraBold": require("../assets/fonts/Poppins-ExtraBold.ttf"),
+    "Poppins-ExtraLight": require("../assets/fonts/Poppins-ExtraLight.ttf"),
+    "Poppins-Light": require("../assets/fonts/Poppins-Light.ttf"),
+    "Poppins-Medium": require("../assets/fonts/Poppins-Medium.ttf"),
+    "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
+    "Poppins-SemiBold": require("../assets/fonts/Poppins-SemiBold.ttf"),
+    "Poppins-Thin": require("../assets/fonts/Poppins-Thin.ttf"),
+  });
 
-export default AppLayout;
+  useEffect(() => {
+    if (error) throw error;
+
+    if (fontsLoaded) {
+      SplashScreen.hideAsync(); //hide the native spash screen immediately
+    }
+  }, [fontsLoaded, error]);
+
+  if (!fontsLoaded && !error) {
+    return null;
+  }
+
+  return <Stack >
+    <Stack.Screen name='index' options={{ headerShown: false }} />
+  </Stack>
+}
+
+export default RootLayout
