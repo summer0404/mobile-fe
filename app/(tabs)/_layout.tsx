@@ -1,25 +1,18 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import { Image, Text, View } from "react-native";
+import { TabBar } from "@/components/TabBar";
 
 const TabsLayout = () => {
   return (
     <>
     <Tabs
-    screenOptions={{
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: '#FFFFFF',
-        tabBarInactiveTintColor: '#00000',
-        tabBarActiveBackgroundColor: '#7C3AED',
-        tabBarStyle: {
-            backgroundColor: '#c4B5FD',
-            borderTopLeftRadius: 70,
-            borderTopRightRadius: 70,
-            height: 84,
-        }
-
-    }}
-    >
+    tabBar={props =>  <TabBar {...props} /> }>
+      <Tabs.Screen name="home" options={{title: "Home"}} />
+      <Tabs.Screen name="analysis" options={{title: "Analysis"}} />
+      <Tabs.Screen name="debt" options={{title: "Debt"}} />
+      <Tabs.Screen name="add_transaction" options={{title: "Transaction"}} />
+      <Tabs.Screen name="profile" options={{title: "Profile"}} />
 
     </Tabs>
     </>
