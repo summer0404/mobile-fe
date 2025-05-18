@@ -13,7 +13,7 @@ export default function IndexPage() {
       if (onboarded !== 'true') {
         router.replace('/onboarding');
       } else if (!token) {
-        router.replace('/auth');
+        router.replace('/auth/signIn');
       } else {
         router.replace('/home');
       }

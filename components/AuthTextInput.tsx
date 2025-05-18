@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { TextInput, View, Text, StyleSheet, Pressable } from 'react-native';
-import { theme } from '../../utils/theme';
-import EyeOnIcon from '../../assets/images/eye.svg'
-import EyeOffIcon from '../../assets/images/eye-off.svg'
+import { theme } from '../utils/theme';
+import EyeOnIcon from '../assets/images/eye.svg'
+import EyeOffIcon from '../assets/images/eye-off.svg'
 
 
 

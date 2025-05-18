@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import AuthTextInput from '../components/AuthTextInput';
+import AuthTextInput from '../../components/AuthTextInput';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import React from 'react';
