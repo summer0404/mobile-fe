@@ -1,9 +1,10 @@
 const colors = {
     violet600: '#7C3AED',
     violet100: '#EDE9FE',
-    yellow500: '#EAB308',
+    yellow500: '#CA8A04',
     whiteText: '#FFFFFF',
     greenText: '#093030',
+    purple300: '#D8B4FE',
 };
 
 const spacing = {

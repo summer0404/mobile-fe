@@ -20,7 +20,11 @@ export default function SignIn() {
                 <AuthTextInput label="Username" value={username} onChangeText={setUsername} />
                 <AuthTextInput label="Password" value={password} onChangeText={setPassword} isPassword />
 
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity
+                    onPress={() => {
+                        router.replace("/(tabs)/home");
+                    }}
+                    style={styles.button}>
                     <Text style={styles.buttonText}>Sign In</Text>
                 </TouchableOpacity>
 
