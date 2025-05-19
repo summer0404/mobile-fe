@@ -81,14 +81,14 @@ export default function DebtDetailScreen() {
 
 
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                 </Pressable>
                 <Text style={styles.headerTitle}>Debt Details</Text>
-                <Ionicons name="person-circle-outline" size={24} color="#fff" />
+                <Ionicons name="notifications" size={24} color="#fff" />
             </View>
 
             {/* Content */}
@@ -126,7 +126,7 @@ export default function DebtDetailScreen() {
                 </View>
 
                 <View style={styles.buttonWrapper}>
-                    <Pressable style={styles.button} onPress={() => router.push(`/debt/edit/${id}`)}>
+                    <Pressable style={styles.button} onPress={() => router.push(`/debt/editDebt/${id}`)}>
                         <Text style={styles.btnText}>Edit</Text>
                     </Pressable>
                     <Pressable style={styles.button} onPress={handleDelete}>
@@ -134,22 +134,37 @@ export default function DebtDetailScreen() {
                     </Pressable>
                 </View>
             </View>
-        </ScrollView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F3EFFF' },
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.violet600,
+    },
     header: {
         flexDirection: 'row',
-        backgroundColor: '#6A4EFF',
-        padding: 16,
+        backgroundColor: theme.colors.violet600,
+        padding: 32,
         alignItems: 'center',
         justifyContent: 'space-between',
     },
     headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-    loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    content: { padding: 20 },
+    loading: {
+        backgroundColor: theme.colors.violet100,
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    content: {
+        height: '100%',
+        padding: 20,
+        paddingBottom: 200,
+        backgroundColor: theme.colors.violet100,
+        borderTopLeftRadius: 60,
+        borderTopRightRadius: 60,
+    },
     title: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
     card: {
         backgroundColor: '#E4D7FF',

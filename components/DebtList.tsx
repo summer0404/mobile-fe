@@ -63,10 +63,10 @@ export default function DebtList({ data }: any) {
 
 const styles = StyleSheet.create({
     section: {
-        fontWeight: 'bold',
-        fontSize: 18,
+        fontFamily: 'Poppins-Medium',
         marginBottom: 8,
-        color: '#555',
+        color: theme.colors.greenText,
+        paddingHorizontal: 12,
     },
     separator: {
         paddingHorizontal: 16,
