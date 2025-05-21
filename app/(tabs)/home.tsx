@@ -1,7 +1,7 @@
 import { View, Text } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView } from 'react-native-gesture-handler'
+import { ScrollView } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import HomeHeader from '../../components/HomeHeader'
 import HomeOverview from '@/components/HomeOverview'
@@ -53,15 +53,15 @@ const Home = () => {
     <SafeAreaView className='flex-1 bg-primary'>
       <StatusBar backgroundColor='#7C3AED' />
       <ScrollView>
-      <View className="p-6">
-        <HomeHeader />
-        <HomeOverview />
-      </View>
-      <View className="bg-primary-200 rounded-t-[50] mt-5 px-6 py-8 min-h-screen ">
-        <HomeOverview2 revenue={4000000} food={1000} />
-        <FilterButtons filters={filters} activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-        <HomeTransactionList transactions={transactions} />
-      </View>
+        <View className="p-6">
+          <HomeHeader />
+          <HomeOverview />
+        </View>
+        <View className="bg-primary-200 rounded-t-[50] mt-5 px-6 py-8 min-h-screen ">
+          <HomeOverview2 revenue={4000000} food={1000} />
+          <FilterButtons filters={filters} activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+          <HomeTransactionList transactions={transactions} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   )

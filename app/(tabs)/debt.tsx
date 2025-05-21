@@ -94,7 +94,7 @@ export default function Debt() {
 
         <TouchableOpacity
           style={[
-            styles.lent,
+            styles.borrowed,
             filter === 'borrow' && { backgroundColor: theme.colors.purple300 },
           ]}
           onPress={() => setFilter('borrow')}
@@ -179,13 +179,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginLeft: 'auto',
     marginRight: 'auto',
+    alignSelf: 'center',
     height: 130,
+    width: '80%',
   },
   lent: {
     backgroundColor: theme.colors.whiteText,
     padding: 14,
     borderRadius: 14,
-    width: '37.5%',
+    width: "47.5%",
+    height: 100,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  borrowed: {
+    backgroundColor: theme.colors.whiteText,
+    padding: 14,
+    borderRadius: 14,
+    width: "47.5%",
     height: 100,
     alignItems: 'center',
     marginTop: 10,

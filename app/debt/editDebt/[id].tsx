@@ -122,6 +122,7 @@ export default function EditDebt() {
                 <View style={{ zIndex: 2000 }}>
                     <Text style={styles.label}>Type</Text>
                     <DropDownPicker
+                        listMode="SCROLLVIEW"
                         open={openType}
                         setOpen={setOpenType}
                         items={typeItems}
@@ -203,6 +204,7 @@ export default function EditDebt() {
                 <View style={{ zIndex: 1000 }}>
                     <Text style={styles.label}>Status</Text>
                     <DropDownPicker
+                        listMode="SCROLLVIEW"
                         open={openStatus}
                         setOpen={setOpenStatus}
                         items={statusItems}

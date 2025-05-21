@@ -67,7 +67,7 @@ export default function AddDebt() {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={styles.container} nestedScrollEnabled={true}>
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -83,6 +83,7 @@ export default function AddDebt() {
                 <View style={{ zIndex: 2000 }}>
                     <Text style={styles.label}>Type</Text>
                     <DropDownPicker
+                        listMode="SCROLLVIEW"
                         open={openType}
                         setOpen={setOpenType}
                         items={typeItems}
@@ -159,9 +160,10 @@ export default function AddDebt() {
                     </View>
                 </View>
 
-                <View style={{ zIndex: 1000 }}>
+                <View style={{ zIndex: 1000 }} >
                     <Text style={styles.label}>Status</Text>
                     <DropDownPicker
+                        listMode="SCROLLVIEW"
                         open={openStatus}
                         setOpen={setOpenStatus}
                         items={statusItems}
