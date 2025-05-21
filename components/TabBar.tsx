@@ -2,8 +2,7 @@ import { View, Platform, LayoutChangeEvent } from "react-native";
 import { useLinkBuilder, useTheme } from "@react-navigation/native";
 import { Text, PlatformPressable } from "@react-navigation/elements";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import React, { useState } from "react";
-import { Feather } from "@expo/vector-icons";
+import React, { useState, useEffect } from "react";
 import TabBarButton from "./TabBarButton";
 import Animated, {
   interpolate,
@@ -16,8 +15,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   // const { colors } = useTheme();
   const { buildHref } = useLinkBuilder();
 
-  const [dimension, setDimensions] = useState({ height: 20, width: 100 });
-
+  const [dimension, setDimensions] = useState({ height: 0, width: 0 });
 
   const numberOfTabs = state.routes.length;
   const buttonWidth = (dimension.width - 2 * 16) / numberOfTabs; // Actual tab width
@@ -51,101 +49,122 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     };
   });
 
+  // Add useEffect to position highlight correctly after layout measurement
+  useEffect(() => {
+    if (dimension.width > 0) {
+      const index = state.index;
+      const offset = 16 + index * buttonWidth + (buttonWidth - highlightWidth) / 2;
+      tabPositionX.value = offset;
+    }
+  }, [dimension.width, state.index, buttonWidth, highlightWidth]);
+
   return (
-    <View
-      className="flex-row justify-between items-center bg-primary-100 rounded-t-full p-4"
-      onLayout={onTabbarLayout}
-    >
-      <Animated.View 
-      style={[animatedStyle, {
-        position: "absolute",
-        backgroundColor: '#7C3AED',
-        borderRadius: 30,
-        height: dimension.height - 15,
-        width: highlightWidth,
-        zIndex: 0,
+    <View 
+      style={{
+        position: 'absolute',
+        bottom: 0,
         left: 0,
-      }]}
-      />
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const label =
-          options.tabBarLabel !== undefined
-            ? options.tabBarLabel
-            : options.title !== undefined
-            ? options.title
-            : route.name;
-
-        const isFocused = state.index === index;
-
-        const onPress = () => {
-
-          focusedTab.value = index;
-
-          const offset = 16 + index * buttonWidth + (buttonWidth - highlightWidth) / 2;
-          tabPositionX.value = withSpring(offset, {
-            duration: 1500,
-          });
-
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
-
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
-          }
-        };
-
-        const onLongPress = () => {
-          navigation.emit({
-            type: "tabLongPress",
-            target: route.key,
-          });
-        };
-
-        return (
-          <TabBarButton
-            key={route.name}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            isFocused={isFocused}
-            routeName={route.name}
-            color={isFocused ? "#fff" : "#000"}
-            label={typeof label === "function" ? route.name : label}
+        right: 0,
+        zIndex: 100,
+      }}
+    >
+      <View
+        className="flex-row justify-between items-center bg-primary-100 rounded-t-full p-4"
+        onLayout={onTabbarLayout}
+      >
+        {dimension.width > 0 && (
+          <Animated.View 
+            style={[animatedStyle, {
+              position: "absolute",
+              backgroundColor: '#7C3AED',
+              borderRadius: 30,
+              height: dimension.height - 15,
+              width: highlightWidth > 0 ? highlightWidth : 0,
+              zIndex: 0,
+              left: 0,
+            }]}
           />
-          // <PlatformPressable
+        )}
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const label =
+            options.tabBarLabel !== undefined
+              ? options.tabBarLabel
+              : options.title !== undefined
+              ? options.title
+              : route.name;
 
-          //   key={route.name}
-          //   href={buildHref(route.name, route.params)}
-          //   accessibilityState={isFocused ? { selected: true } : {}}
-          //   accessibilityLabel={options.tabBarAccessibilityLabel}
-          //   testID={options.tabBarButtonTestID}
-          //   onPress={onPress}
-          //   onLongPress={onLongPress}
-          //   style={{ flex: 1 }}
-          // >
-          //   <View
-          //   className='justify-between items-center gap 5'
-          //   >
-          //     {icon[route.name as keyof typeof icon]({
-          //       color: isFocused ? '#fff' : '#000'
-          //     })}
-          //     {/* <Text style={{ color: isFocused ? colors.primary : colors.text }}>
-          //       {typeof label === 'function'
-          //         ? label({
-          //           focused: isFocused,
-          //           color: isFocused ? colors.primary : colors.text,
-          //           position: 'below-icon',
-          //           children: route.name,
-          //         })
-          //         : label}
-          //     </Text> */}
-          //   </View>
-          // </PlatformPressable>
-        );
-      })}
+          const isFocused = state.index === index;
+
+          const onPress = () => {
+
+            focusedTab.value = index;
+
+            const offset = 16 + index * buttonWidth + (buttonWidth - highlightWidth) / 2;
+            tabPositionX.value = withSpring(offset, {
+              duration: 1500,
+            });
+
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          };
+
+          const onLongPress = () => {
+            navigation.emit({
+              type: "tabLongPress",
+              target: route.key,
+            });
+          };
+
+          return (
+            <TabBarButton
+              key={route.name}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              isFocused={isFocused}
+              routeName={route.name}
+              color={isFocused ? "#fff" : "#000"}
+              label={typeof label === "function" ? route.name : label}
+            />
+            // <PlatformPressable
+
+            //   key={route.name}
+            //   href={buildHref(route.name, route.params)}
+            //   accessibilityState={isFocused ? { selected: true } : {}}
+            //   accessibilityLabel={options.tabBarAccessibilityLabel}
+            //   testID={options.tabBarButtonTestID}
+            //   onPress={onPress}
+            //   onLongPress={onLongPress}
+            //   style={{ flex: 1 }}
+            // >
+            //   <View
+            //   className='justify-between items-center gap 5'
+            //   >
+            //     {icon[route.name as keyof typeof icon]({
+            //       color: isFocused ? '#fff' : '#000'
+            //     })}
+            //     {/* <Text style={{ color: isFocused ? colors.primary : colors.text }}>
+            //       {typeof label === 'function'
+            //         ? label({
+            //           focused: isFocused,
+            //           color: isFocused ? colors.primary : colors.text,
+            //           position: 'below-icon',
+            //           children: route.name,
+            //         })
+            //         : label}
+            //     </Text> */}
+            //   </View>
+            // </PlatformPressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
