@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { theme } from "@/utils/theme";
 
 const { width, height } = Dimensions.get("window");
 
@@ -171,20 +172,21 @@ const styles = StyleSheet.create({
         top: height * 0.5 + 120,
     },
     title: {
-        fontSize: 20,
-        fontWeight: "bold",
+        fontSize: 16,
+        fontFamily: "Poppins-Bold",
         color: "#000",
         textAlign: "center",
         marginBottom: 10,
     },
     description: {
         fontSize: 14,
+        fontFamily: "Poppins-Regular",
         color: "#333",
         textAlign: "center",
         paddingHorizontal: 10,
     },
     arrowButton: {
-        backgroundColor: "#5C4DBE",
+        backgroundColor: theme.colors.violet600,
         width: 48,
         height: 48,
         borderRadius: 24,
@@ -200,15 +202,15 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: height * 0.5 + 150,
         marginTop: 30,
-        backgroundColor: "#5C4DBE",
+        backgroundColor: theme.colors.violet600,
         paddingVertical: 12,
         paddingHorizontal: 25,
         borderRadius: 28,
     },
     ctaText: {
         color: "#fff",
-        fontWeight: "bold",
-        fontSize: 14,
+        fontFamily: "Poppins-Bold",
+        fontSize: 12,
     },
     bottomControls: {
         flexDirection: "row",

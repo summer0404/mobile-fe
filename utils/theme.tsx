@@ -5,6 +5,7 @@ const colors = {
     whiteText: '#FFFFFF',
     greenText: '#093030',
     purple300: '#D8B4FE',
+    blueText: '#0068FF',
 };
 
 const spacing = {

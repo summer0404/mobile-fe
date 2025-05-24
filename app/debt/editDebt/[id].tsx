@@ -5,6 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { theme } from '@/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
+import CalendarIcon from '../../../assets/images/calendar.svg';
 
 export default function EditDebt() {
     const { id } = useLocalSearchParams();
@@ -117,7 +118,12 @@ export default function EditDebt() {
             {/* Content */}
             <View style={styles.content}>
                 <Text style={styles.label}>Name</Text>
-                <TextInput style={styles.input} value={form.name} onChangeText={val => handleChange('name', val)} />
+                <TextInput
+                    style={styles.input}
+                    value={form.name}
+                    onChangeText={val => handleChange('name', val)}
+                    placeholder='Enter name here'
+                />
 
                 <View style={{ zIndex: 2000 }}>
                     <Text style={styles.label}>Type</Text>
@@ -131,6 +137,7 @@ export default function EditDebt() {
                         setValue={val => handleChange('type', val())}
                         zIndex={3000}
                         zIndexInverse={2000}
+                        textStyle={styles.inputOption}
                     />
 
                 </View>
@@ -142,6 +149,7 @@ export default function EditDebt() {
                     keyboardType="numeric"
                     value={form.amount}
                     onChangeText={val => handleChange('amount', val)}
+                    placeholder='Enter amount here'
                 />
 
                 <Text style={styles.label}>Debtor Name</Text>
@@ -149,10 +157,11 @@ export default function EditDebt() {
 
                 <Text style={styles.label}>Detail</Text>
                 <TextInput
-                    style={[styles.input, { height: 80 }]}
-                    multiline
+                    style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                    multiline={true}
                     value={form.detail}
                     onChangeText={val => handleChange('detail', val)}
+                    placeholder="Enter detail here"
                 />
 
                 <View style={styles.dateWrapper}>
@@ -164,6 +173,9 @@ export default function EditDebt() {
                                 value={formatDate(form.debt_date)}
                                 editable={false}
                             />
+                            <View style={{ position: 'absolute', top: 12, right: 10 }}>
+                                <CalendarIcon width={24} height={24} />
+                            </View>
                         </TouchableOpacity>
                         {showDebtDate && (
                             <DateTimePicker
@@ -186,6 +198,9 @@ export default function EditDebt() {
                                 value={formatDate(form.due_date)}
                                 editable={false}
                             />
+                            <View style={{ position: 'absolute', top: 12, right: 10 }}>
+                                <CalendarIcon width={24} height={24} />
+                            </View>
                         </TouchableOpacity>
                         {showDueDate && (
                             <DateTimePicker
@@ -213,6 +228,7 @@ export default function EditDebt() {
                         setValue={val => handleChange('status', val())}
                         zIndex={2000}
                         zIndexInverse={2000}
+                        textStyle={styles.inputOption}
                     />
                 </View>
 
@@ -225,6 +241,7 @@ export default function EditDebt() {
                         {loadingAdd ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
                     </TouchableOpacity>
                 </View>
+                <View style={{ height: 20 }} />
             </View>
         </ScrollView>
     );
@@ -238,35 +255,53 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         backgroundColor: theme.colors.violet600,
-        padding: 32,
+        padding: 30,
+        paddingBottom: 16,
+        paddingTop: 50,
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    headerTitle: {
+        color: '#fff',
+        fontSize: 20,
+        fontFamily: 'Poppins-SemiBold',
+    },
     loading: {
         backgroundColor: theme.colors.violet100,
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center'
-    }, content: {
+    },
+    content: {
         height: '100%',
-        padding: 20,
-        paddingTop: 40,
+        padding: 30,
+        paddingTop: 30,
         backgroundColor: theme.colors.violet100,
         borderTopLeftRadius: 60,
         borderTopRightRadius: 60,
     },
     label: {
-        fontWeight: 'bold',
+        fontSize: 14,
+        fontFamily: 'Poppins-Medium',
+        color: theme.colors.greenText,
         marginTop: 10,
-        marginBottom: 5,
-        color: '#333',
+        marginBottom: 0,
     },
     input: {
+        fontFamily: 'Poppins-Medium',
+        fontSize: 14,
+        lineHeight: 18,
         backgroundColor: '#fff',
-        padding: 12,
+        paddingHorizontal: 12,
+        height: 50,
         borderRadius: 10,
-        fontSize: 16,
+    },
+    inputOption: {
+        fontFamily: 'Poppins-Medium',
+        fontSize: 14,
+        lineHeight: 16,
+        backgroundColor: '#fff',
+        borderRadius: 10,
     },
     dateWrapper: {
         flexDirection: 'row',

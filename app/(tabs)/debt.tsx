@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Pressable } from 
 import React, { useState, useEffect, useCallback } from 'react';
 import { theme } from '../../utils/theme';
 import DebtList from '@/components/DebtList';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Image } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -79,6 +79,7 @@ export default function Debt() {
         onPress={() => setFilter('all')}
       >
         <Text style={styles.buttonText}>Total Balance</Text>
+        <Text style={styles.balanceAmount}>$7,783.00</Text>
       </TouchableOpacity>
 
       <View style={styles.option}>
@@ -89,7 +90,13 @@ export default function Debt() {
           ]}
           onPress={() => setFilter('lend')}
         >
+          <Image
+            source={require("../../assets/images/lent.png")}
+            style={{ width: 30, height: 30, }}
+            resizeMode="contain"
+          />
           <Text style={styles.buttonText}>Lent</Text>
+          <Text style={styles.amount}>$4,120.00</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -99,7 +106,13 @@ export default function Debt() {
           ]}
           onPress={() => setFilter('borrow')}
         >
+          <Image
+            source={require("../../assets/images/borrowed.png")}
+            style={{ width: 30, height: 30, }}
+            resizeMode="contain"
+          />
           <Text style={styles.buttonText}>Borrowed</Text>
+          <Text style={styles.amount}>$1,187.40</Text>
         </TouchableOpacity>
       </View>
 
@@ -112,12 +125,19 @@ export default function Debt() {
           <View style={styles.content}>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => router.push('/debt/addDebt')} // hoặc tên route của bạn
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              onPress={() => router.push('/debt/addDebt')}
             >
-              <Text style={styles.addButtonText}>+</Text>
+              <Image
+                source={require('../../assets/images/addButton.png')}
+                style={{ width: 30, height: 30, }}
+                resizeMode="contain"
+              ></Image>
+              {/* <Text style={styles.addButtonText}>+</Text> */}
             </TouchableOpacity>
 
             <DebtList data={filteredDebts} />
+            <View style={{ height: 30 }} ></View>
           </View>
 
         )
@@ -137,11 +157,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.violet600,
   },
+
   header: {
     flexDirection: 'row',
     backgroundColor: theme.colors.violet600,
-    padding: 32,
+    padding: 30,
     paddingBottom: 16,
+    paddingTop: 50,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -162,12 +184,16 @@ const styles = StyleSheet.create({
     marginTop: 16,
     color: theme.colors.whiteText,
   },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontFamily: 'Poppins-SemiBold',
+  },
   total: {
     backgroundColor: theme.colors.whiteText,
-    padding: 14,
+    padding: 10,
     borderRadius: 14,
-    width: '80%',
+    width: '75%',
     height: 75,
     alignItems: 'center',
     marginTop: 10,
@@ -181,7 +207,7 @@ const styles = StyleSheet.create({
     marginRight: 'auto',
     alignSelf: 'center',
     height: 130,
-    width: '80%',
+    width: '75%',
   },
   lent: {
     backgroundColor: theme.colors.whiteText,
@@ -203,23 +229,36 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#000',
-    fontWeight: 'bold'
+    fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+  },
+  balanceAmount: {
+    color: '#000',
+    fontSize: 18,
+    fontFamily: 'Poppins-Bold',
+  },
+  amount: {
+    color: '#000',
+    fontSize: 15,
+    fontFamily: 'Poppins-SemiBold',
+    lineHeight: 24,
   },
   addButton: {
+    zIndex: 100,
     backgroundColor: theme.colors.violet600,
     borderRadius: 11,
     alignItems: 'center',
-    marginBottom: 20,
-    width: 32,
-    height: 32,
     justifyContent: 'center',
+    marginBottom: 20,
+    width: 30,
+    height: 30,
     position: 'absolute',
-    top: 20,
+    top: 30,
     right: 40,
   },
   addButtonText: {
     color: '#fff',
     fontSize: 24,
+    lineHeight: 32,
   },
-
 });

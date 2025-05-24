@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
@@ -81,7 +81,7 @@ export default function DebtDetailScreen() {
 
 
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()}>
@@ -96,15 +96,35 @@ export default function DebtDetailScreen() {
                 <Text style={styles.title}>{debt.name}</Text>
 
                 <View style={styles.card}>
-                    <Ionicons
-                        name={debt.type === 'lend' ? 'key-outline' : 'cash-outline'}
-                        size={36}
-                        color="#6A4EFF"
-                        style={styles.icon}
-                    />
-                    <View>
-                        <Text style={styles.amount}>${debt.amount.toFixed(2)}</Text>
-                        <Text style={styles.status}>{debt.status.charAt(0).toUpperCase() + debt.status.slice(1)}</Text>
+                    <View style={styles.iconWrapper}>
+                        {debt.type == "lend" ? (
+                            <>
+                                <Image
+                                    source={require("../../assets/images/lent.png")}
+                                    style={{ width: 50, height: 50, }}
+                                    resizeMode="contain"
+                                />
+                                <Text style={styles.textType}>Lent</Text></>
+                        ) : (
+                            <>
+                                <Image
+                                    source={require("../../assets/images/borrowed.png")}
+                                    style={{ width: 50, height: 50, }}
+                                    resizeMode="contain"
+                                />
+                                <Text style={styles.textType}>Borrowed</Text>
+                            </>
+                        )}
+                    </View>
+                    <View style={{ flexDirection: 'column', gap: 20 }}>
+                        <View>
+                            <Text style={styles.titleAmount}>Amount</Text>
+                            <Text style={styles.amount}>${debt.amount.toFixed(2)}</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.titleAmount}>Status</Text>
+                            <Text style={styles.status}>{debt.status.charAt(0).toUpperCase() + debt.status.slice(1)}</Text>
+                        </View>
                     </View>
                 </View>
 
@@ -122,7 +142,9 @@ export default function DebtDetailScreen() {
                 </View>
                 <View style={styles.fieldBox}>
                     <Text style={styles.label}>Due Date</Text>
-                    <Text style={styles.field}>{new Date(debt.due_date).toDateString()}</Text>
+                    <Text style={styles.field}>{new Date(debt.due_date).toDateString()}
+                    </Text>
+
                 </View>
 
                 <View style={styles.buttonWrapper}>
@@ -133,8 +155,9 @@ export default function DebtDetailScreen() {
                         <Text style={styles.btnText}>Delete</Text>
                     </Pressable>
                 </View>
+                <View style={{ height: 124 }} />
             </View>
-        </View>
+        </ScrollView>
     );
 }
 
@@ -146,11 +169,17 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         backgroundColor: theme.colors.violet600,
-        padding: 32,
+        padding: 30,
+        paddingBottom: 16,
+        paddingTop: 50,
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    headerTitle: {
+        color: '#fff',
+        fontSize: 20,
+        fontFamily: 'Poppins-SemiBold',
+    },
     loading: {
         backgroundColor: theme.colors.violet100,
         flex: 1,
@@ -159,38 +188,67 @@ const styles = StyleSheet.create({
     },
     content: {
         height: '100%',
-        padding: 20,
-        paddingBottom: 200,
+        padding: 30,
         backgroundColor: theme.colors.violet100,
         borderTopLeftRadius: 60,
         borderTopRightRadius: 60,
     },
-    title: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+    title: {
+        fontSize: 20,
+        fontFamily: 'Poppins-SemiBold',
+        textAlign: 'center',
+        marginBottom: 20,
+        marginTop: 5,
+    },
     card: {
-        backgroundColor: '#E4D7FF',
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 20,
+        paddingHorizontal: 10,
+        paddingRight: 15,
         borderRadius: 16,
         marginBottom: 20,
         justifyContent: 'space-between',
     },
-    icon: {
-        backgroundColor: '#D9C8FF',
-        padding: 14,
+    iconWrapper: {
+        backgroundColor: theme.colors.purple300,
         borderRadius: 50,
-        marginRight: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '55%',
+        height: 150,
     },
-    amount: { fontSize: 20, fontWeight: 'bold' },
-    status: { color: '#333', fontWeight: '600', marginTop: 4 },
-    fieldBox: { marginBottom: 12 },
-    label: { fontWeight: '600', color: '#555' },
-    field: {
-        backgroundColor: '#f6f1ff',
-        padding: 12,
-        borderRadius: 10,
-        marginTop: 4,
+    textType: {
+        marginTop: 10,
+        fontFamily: 'Poppins-Medium',
+        fontSize: 18,
+    },
+    titleAmount: {
+        fontSize: 16,
+        fontFamily: 'Poppins-Medium',
+    },
+    amount: {
+        fontSize: 18,
+        fontFamily: 'Poppins-Bold',
+    },
+    status: {
         color: '#333',
+        fontSize: 18,
+        fontFamily: 'Poppins-Bold',
+    },
+    fieldBox: { marginBottom: 12 },
+    label: {
+        fontSize: 14,
+        fontFamily: 'Poppins-Medium',
+        color: theme.colors.greenText,
+    },
+    field: {
+        fontSize: 14,
+        fontFamily: 'Poppins-Medium',
+        color: theme.colors.greenText,
+        backgroundColor: theme.colors.whiteText,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 10,
     },
     buttonRow: {
         flexDirection: 'row',
