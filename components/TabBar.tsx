@@ -12,7 +12,6 @@ import Animated, {
 } from "react-native-reanimated";
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  // const { colors } = useTheme();
   const { buildHref } = useLinkBuilder();
 
   const [dimension, setDimensions] = useState({ height: 0, width: 0 });

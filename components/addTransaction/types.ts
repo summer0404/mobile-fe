@@ -1,3 +1,5 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+
 // src/types.ts (or similar path)
 export interface Category {
   id: string;
@@ -27,4 +29,17 @@ export interface DateTimePickerEvent {
     timestamp?: number; // timestamp is optional
     utcOffset?: number;
   };
+}
+
+export interface TransactionItemData { 
+  id: string;
+  title: string;
+  dateTime: string;
+  categoryDisplay: string; 
+  amount: string; 
+  amountRaw: number; 
+  type: 'income' | 'expense';
+  iconName: React.ComponentProps<typeof MaterialCommunityIcons>['name']; 
+  dateObject: Date;  // Actual Date object for sorting/grouping
+  detail?: string;
 }

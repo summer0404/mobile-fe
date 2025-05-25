@@ -13,11 +13,11 @@ const GoBackToHomeHeader = ({ title }: GoBackToHomeHeaderProps) => {
     const router = useRouter();
 
     return (
-        <View className="flex-row justify-between items-center mb-6">
+        <View className="flex-row justify-between items-center mb-6 mx-3 mt-3">
             <TouchableOpacity onPress={() => router.navigate('/home')}>
                 <Ionicons name="arrow-back" size={28} color="white" />
             </TouchableOpacity>
-            <Text className="text-xl font-pbold text-white">{title}</Text>
+            <Text className="text-lg font-pbold text-white">{title}</Text>
             <TouchableOpacity onPress={() => console.log('Notifications Pressed')}>
                 <MaterialCommunityIcons name="bell-outline" size={28} color="white" />
             </TouchableOpacity>
