@@ -1,6 +1,6 @@
-import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
+import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, Alert } from 'react-native'
 import React, { useState, useEffect } from 'react'
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router'; // Make sure useRouter is imported
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader'
 import { ScrollView } from 'react-native-gesture-handler'
 import PrimaryButton from '@/components/addTransaction/PrimaryButton'
@@ -10,33 +10,11 @@ import DateField from '@/components/addTransaction/DateField'
 import TransactionTypeToggle from '@/components/addTransaction/TransactionTypeToggle'
 import CategoryModal from '@/components/addTransaction/CategoryModal'
 import { Category, CategoryGroupData, NavItem, TransactionTypeId } from '../../components/addTransaction/types';
+import categories from '@/constants/categories'; 
+import numeral from 'numeral';
 
-const allCategoriesData: CategoryGroupData[] = [
-  {
-    groupName: 'Living expenses',
-    items: [
-      { id: 'food', name: 'Food', icon: 'silverware-fork-knife', iconColor: 'text-orange-500', bgColor: 'bg-orange-100' },
-      { id: 'groceries', name: 'Groceries', icon: 'cart-outline', iconColor: 'text-green-500', bgColor: 'bg-green-100' },
-      { id: 'transport', name: 'Transport', icon: 'car-outline', iconColor: 'text-blue-500', bgColor: 'bg-blue-100' },
-    ],
-  },
-  {
-    groupName: 'Incidental expenses',
-    items: [
-      { id: 'shopping', name: 'Shopping', icon: 'shopping-outline', iconColor: 'text-pink-500', bgColor: 'bg-pink-100' },
-      { id: 'entertainment', name: 'Entertainment', icon: 'movie-open-outline', iconColor: 'text-purple-500', bgColor: 'bg-purple-100' },
-    ],
-  },
-  {
-    groupName: 'Fixed expenses',
-    items: [
-      { id: 'bills', name: 'Bills', icon: 'receipt', iconColor: 'text-indigo-500', bgColor: 'bg-indigo-100' },
-      { id: 'home', name: 'Home', icon: 'home-outline', iconColor: 'text-amber-500', bgColor: 'bg-amber-100' },
-    ],
-  },
-];
-const suggestedCategoriesData: Category[] = allCategoriesData[0]?.items.slice(0, 3) || [];
 const AddTransaction = () => {
+  const router = useRouter(); // Initialize router
   const [transactionType, setTransactionType] = useState<TransactionTypeId>('expense');
   const [date, setDate] = useState<Date>(new Date());
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -63,8 +41,32 @@ const AddTransaction = () => {
 
 
   const handleSave = () => {
-    console.log({ transactionType, date, selectedCategory, amount, message });
+    // Your existing save logic (e.g., API call, local storage update)
+    console.log('Saved Data:', { transactionType, date, selectedCategory, amount, message });
+    
+    // Example: Add to dummyTransactions for now
+    // This is a placeholder. You should have a proper state management or API call here.
+    const newTransaction = {
+      id: String(Date.now()), // Simple unique ID
+      title: message.substring(0, 20) || selectedCategory?.name || 'Transaction', // Derive title
+      dateTime: date.toLocaleString(), // Format as needed
+      categoryDisplay: selectedCategory?.name || 'N/A',
+      amount: numeral(parseFloat(amount || "0")).format('0,0.00'), // Format amount string
+      amountRaw: transactionType === 'income' ? parseFloat(amount || "0") : -parseFloat(amount || "0"),
+      type: transactionType,
+      iconName: selectedCategory?.icon || 'help-circle-outline', // Default icon
+      dateObject: date,
+      detail: message,
+    };
+    // dummyTransactions.unshift(newTransaction); // Add to the beginning of the list (if dummyTransactions is mutable and accessible here)
+
+
     Keyboard.dismiss(); // Hide keyboard after saving
+    Alert.alert("Success", "Transaction saved successfully!"); // Give user feedback
+
+    // Navigate to the transaction list screen
+    router.replace('/transaction'); // Or router.push('/transaction');
+                                  // consider router.back(); if it makes more sense in your flow
   };
 
   const handleCategorySelectFromModal = (category: Category) => {
@@ -110,7 +112,7 @@ const AddTransaction = () => {
                 label="Category"
                 selectedCategory={selectedCategory}
                 onOpenModal={() => setCategoryModalVisible(true)}
-                suggestedCategories={suggestedCategoriesData}
+                suggestedCategories={categories.suggestedCategoriesData} // Access the correct property
                 onSuggestedSelect={setSelectedCategory}
                 required
               />
@@ -148,7 +150,7 @@ const AddTransaction = () => {
           <CategoryModal
             isVisible={isCategoryModalVisible}
             onClose={() => setCategoryModalVisible(false)}
-            allCategories={allCategoriesData}
+            allCategories={categories.allCategoriesData} // Access the correct property
             onSelectCategory={handleCategorySelectFromModal}
           />
         </View>

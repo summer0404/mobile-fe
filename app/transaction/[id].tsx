@@ -76,11 +76,13 @@ const TransactionDetailScreen = () => {
 
   const handleEdit = () => {
     // Navigate to an edit screen, passing the transaction ID or data
-    router.push({
-      pathname: '/transaction/[id]',
-      params: { id: transaction!.id },
-    });
-    console.log('Edit transaction:', transaction.id);
+    if (transaction) {
+      router.push({
+        pathname: "/transaction/edit/[id]", // Use dynamic route path
+        params: { id: transaction.id, transactionData: JSON.stringify(transaction) }, // Pass id and data
+      });
+      console.log('Navigating to edit transaction:', transaction.id);
+    }
   };
 
   const handleDelete = () => {
