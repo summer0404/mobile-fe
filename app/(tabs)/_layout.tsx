@@ -1,31 +1,51 @@
 import { Tabs } from "expo-router";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Keyboard } from "react-native";
 import { TabBar } from "@/components/TabBar";
-import { View } from "react-native";
 
 const TabsLayout = () => {
-  return (
-    <Tabs
-      tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{
-        // This ensures content renders under the tab bar
-        headerShown: false,
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  return (
+    <Tabs 
+      // Conditionally render the TabBar component itself
+      tabBar={(props) => {
+        if (keyboardVisible) {
+          return null; // Don't render the TabBar when keyboard is visible
+        }
+        return <TabBar {...props} />; // Render it otherwise
+      }}
+      screenOptions={{
+        headerShown: false,
       }}
     >
+      <Tabs.Screen name="home" options={{ title: "Home" }} />
+      <Tabs.Screen name="analysis" options={{ title: "Analysis" }} />
+      <Tabs.Screen name="debt" options={{ title: "Debt" }} />
       <Tabs.Screen 
-        name="home" 
-        options={{
-          title: "Home",
+        name="add_transaction" 
+        options={{ 
+          title: "Transaction",
         }} 
       />
-      <Tabs.Screen name="analysis" options={{title: "Analysis"}} />
-      <Tabs.Screen name="debt" options={{title: "Debt"}} />
-      <Tabs.Screen name="add_transaction" options={{title: "Transaction"}} />
-      <Tabs.Screen name="profile" options={{title: "Profile"}} />
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
-  )
-}
+  );
+};
 
 export default TabsLayout;
 

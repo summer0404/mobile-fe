@@ -1,6 +1,6 @@
 import { View, Text, Pressable, GestureResponderEvent } from "react-native";
 import React from "react";
-import { icon } from "@/app/constants/icon";
+import { icon } from "@/constants/icon";
 import Animated, {interpolate, useAnimatedStyle, useSharedValue, withSpring} from 'react-native-reanimated'
 import { useEffect } from "react";
 

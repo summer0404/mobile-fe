@@ -14,7 +14,7 @@ const Analysis = () => {
 
   return (
     <SafeAreaView className='flex-1 bg-primary'>
-      <StatusBar backgroundColor='#7C3AED' />
+      <StatusBar />
       
       {/* Fixed header section */}
       <View className="p-6">

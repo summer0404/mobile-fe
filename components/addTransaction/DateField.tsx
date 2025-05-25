@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'; // Import event type
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 interface DateFieldProps {
   label: string;
@@ -22,11 +22,22 @@ const DateField: React.FC<DateFieldProps> = ({ label, date, onDateChange, requir
   };
 
   const formatDate = (dateToFormat: Date): string => {
-    return `Today, ${dateToFormat.toLocaleDateString('en-US', {
+    const today = new Date();
+    
+    const isToday = 
+      dateToFormat.getDate() === today.getDate() &&
+      dateToFormat.getMonth() === today.getMonth() &&
+      dateToFormat.getFullYear() === today.getFullYear();
+    
+    if (isToday) {
+      return "Today";
+    }
+    
+    return dateToFormat.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
       year: 'numeric',
-    })}`;
+    });
   };
 
   return (
@@ -48,7 +59,7 @@ const DateField: React.FC<DateFieldProps> = ({ label, date, onDateChange, requir
           value={date}
           mode="date"
           is24Hour={true}
-          display="default" // Or "spinner", "calendar", "clock"
+          display="default"
           onChange={onChange}
         />
       )}

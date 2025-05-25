@@ -1,7 +1,7 @@
 // components/FormInput.tsx
 import React from 'react';
-import { View, Text, TextInput, KeyboardTypeOptions, StyleProp, ViewStyle, TextStyle } from 'react-native';
-import numeral from 'numeral'; // Import numeral
+import { View, Text, TextInput, KeyboardTypeOptions, StyleProp, ViewStyle, TextStyle, Platform } from 'react-native';
+import numeral from 'numeral';
 
 interface FormInputProps {
   label: string;
@@ -12,10 +12,11 @@ interface FormInputProps {
   multiline?: boolean;
   numberOfLines?: number;
   required?: boolean;
-  inputStyle?: string | StyleProp<TextStyle>;
+  inputWrapperStyle?: string | StyleProp<ViewStyle>;
+  textInputStyle?: string | StyleProp<TextStyle>;
   containerStyle?: string | StyleProp<ViewStyle>;
-  formatAsCurrency?: boolean; // New prop
-  currencySymbol?: string; // Optional: if you want to prefix with a symbol
+  formatAsCurrency?: boolean;
+  currencySymbol?: string;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -27,46 +28,53 @@ const FormInput: React.FC<FormInputProps> = ({
   multiline = false,
   numberOfLines = 1,
   required = false,
-  inputStyle = "",
+  inputWrapperStyle = "",
+  textInputStyle = "",
   containerStyle = "",
-  formatAsCurrency = false, // Default to false
+  formatAsCurrency = false,
   currencySymbol = '',
 }) => {
 
   const handleTextChange = (text: string) => {
     if (formatAsCurrency) {
-      // 1. Remove non-digit characters (except decimal point if needed, but for whole numbers, just digits)
       const numericValue = text.replace(/[^0-9]/g, '');
-      onChangeText(numericValue); // Pass the raw numeric string back to the parent state
+      onChangeText(numericValue);
     } else {
       onChangeText(text);
     }
   };
 
   const displayValue = formatAsCurrency
-    ? (value ? numeral(value).format('0,0') : '') // Format only if there's a value
+    ? (value && value !== '' ? numeral(value).format('0,0') : '')
     : value;
+
+  // Base TextInput classes
+  let baseTextInputClasses = "flex-1 text-textDark";
+  if (multiline) {
+    baseTextInputClasses += " h-full";
+  }
+  const combinedTextInputStyle = `${baseTextInputClasses} ${textInputStyle as string}`;
 
   return (
     <View className={containerStyle as string}>
-      <Text className="text-sm font-pmedium text-black mb-1.5">
+      <Text className="text-sm font-medium text-textDark mb-1.5">
         {label}
         {required && <Text className="text-red-500">*</Text>}
       </Text>
-      <View className={`bg-[#F5F5F5] p-3.5 ${label === 'Amount' ? 'rounded-full' : 'rounded-2xl'} shadow-sm flex-row items-center ${inputStyle as string}`}>
+      <View className={`bg-white p-3.5 rounded-lg shadow-sm flex-row items-start ${inputWrapperStyle as string}`}>
         {formatAsCurrency && currencySymbol && value ? (
-            <Text className="text-black mr-1">{currencySymbol}</Text>
+          <Text className="text-textDark mr-1 mt-0.5">{currencySymbol}</Text>
         ) : null}
         <TextInput
-            className="flex-1 text-black" 
-            placeholder={placeholder}
-            placeholderTextColor="#A0A0A0"
-            keyboardType={formatAsCurrency ? 'number-pad' : keyboardType} // Use number-pad for currency
-            value={displayValue} // Display the formatted value
-            onChangeText={handleTextChange} // Handle raw input
-            multiline={multiline}
-            numberOfLines={numberOfLines}
-            textAlignVertical={multiline ? "top" : "center"}
+          className={combinedTextInputStyle}
+          placeholder={placeholder}
+          placeholderTextColor="#A0A0A0"
+          keyboardType={formatAsCurrency ? 'number-pad' : keyboardType}
+          value={displayValue}
+          onChangeText={handleTextChange}
+          multiline={multiline}
+          numberOfLines={Platform.OS === 'android' && multiline ? numberOfLines : undefined}
+          textAlignVertical={multiline ? "top" : "center"}
         />
       </View>
     </View>

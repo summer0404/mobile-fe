@@ -51,7 +51,7 @@ const Home = () => {
 
   return (
     <SafeAreaView className='flex-1 bg-primary'>
-      <StatusBar backgroundColor='#7C3AED' />
+      <StatusBar  />
       <ScrollView>
       <View className="p-6">
         <HomeHeader />
