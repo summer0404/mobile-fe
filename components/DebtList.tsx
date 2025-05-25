@@ -1,7 +1,7 @@
 import { theme } from '@/utils/theme';
 import React from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity, Image } from 'react-native';
 
 export default function DebtList({ data }: any) {
     // Nhóm theo tháng
@@ -33,13 +33,33 @@ export default function DebtList({ data }: any) {
                             style={styles.row}
                             onPress={() => handlePress(item)}
                         >
-                            <View>
+                            <View style={styles.typeIcon}>
+                                {item.type == "lend" ? (
+                                    <Image
+                                        source={require("../assets/images/lent.png")}
+                                        style={{ width: 30, height: 30, tintColor: theme.colors.whiteText }}
+                                        resizeMode="contain"
+                                    />
+                                ) : (
+                                    <Image
+                                        source={require("../assets/images/borrowed.png")}
+                                        style={{ width: 30, height: 30, tintColor: theme.colors.whiteText }}
+                                        resizeMode="contain"
+                                    />
+                                )}
+                            </View>
+                            <View style={styles.nameDate}>
                                 <Text style={styles.name}>{item.name}</Text>
                                 <Text style={styles.date}>
-                                    {new Date(item.debt_date).toLocaleDateString()}
+                                    {new Date(item.debt_date).toLocaleDateString('en-US', {
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}
                                 </Text>
                             </View>
-                            <Text style={[styles.status, styles.separator]}>{item.status}</Text>
+                            <View style={{ width: 100, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={[styles.status, styles.separator]}>{item.status}</Text>
+                            </View>
                             <Text
                                 style={[
                                     styles.amount,
@@ -64,12 +84,13 @@ export default function DebtList({ data }: any) {
 const styles = StyleSheet.create({
     section: {
         fontFamily: 'Poppins-Medium',
+        fontSize: 14,
         marginBottom: 8,
         color: theme.colors.greenText,
         paddingHorizontal: 12,
     },
     separator: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         justifyContent: 'center',
         alignItems: 'center',
         borderLeftWidth: 1,
@@ -84,12 +105,40 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: 10,
     },
-    name: { fontWeight: 'bold', fontSize: 16 },
-    date: { color: '#777', fontSize: 12 },
+    nameDate: {
+        minWidth: 70,
+        flexDirection: 'column',
+        justifyContent: 'center',
+    },
+    name: {
+        fontFamily: 'Poppins-Medium',
+        fontSize: 14,
+        textAlign: 'left'
+    },
+    date: {
+        color: theme.colors.blueText,
+        fontSize: 11,
+        fontFamily: 'Poppins-SemiBold',
+    },
     status: {
         textTransform: 'capitalize',
         alignSelf: 'center',
         justifyContent: 'center',
+        fontSize: 12,
+        fontFamily: 'Poppins-Light',
     },
-    amount: { fontWeight: 'bold', alignSelf: 'center' },
+    amount: {
+        fontFamily: 'Poppins-Medium',
+        fontSize: 14,
+        alignSelf: 'center'
+    },
+    typeIcon: {
+        width: 57,
+        height: 53,
+        borderRadius: 22,
+        backgroundColor: theme.colors.purple300,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 8,
+    },
 });
