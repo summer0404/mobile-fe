@@ -10,22 +10,25 @@ import GoogleIcon from '../../assets/images/google.svg'
 
 export default function SignIn() {
     const [username, setUsername] = useState('');
+    const [firstname, setFirstname] = useState('');
+    const [lastname, setLastname] = useState('');
     const [password, setPassword] = useState('');
+    const [conPassword, setConPassword] = useState('');
+
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Welcome</Text>
+            <Text style={styles.title}>Create Account</Text>
 
             <View style={styles.subContainer}>
-                <AuthTextInput label="Username" value={username} onChangeText={setUsername} />
+                <AuthTextInput label="Username or Email" value={username} onChangeText={setUsername} />
+                <AuthTextInput label="First Name" value={firstname} onChangeText={setFirstname} />
+                <AuthTextInput label="Last Name" value={lastname} onChangeText={setLastname} />
                 <AuthTextInput label="Password" value={password} onChangeText={setPassword} isPassword />
+                <AuthTextInput label="Confirm Password" value={conPassword} onChangeText={setConPassword} isPassword />
 
                 <TouchableOpacity style={styles.button}>
                     <Text style={styles.buttonText}>Sign Up</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity>
-                    <Text style={styles.link}></Text>
                 </TouchableOpacity>
 
                 <Text style={styles.fingerprintText}><Text style={{ color: 'orange' }}></Text></Text>
@@ -49,7 +52,7 @@ const styles = StyleSheet.create({
         position: 'relative',
         flex: 1,
         backgroundColor: theme.colors.violet600,
-        paddingTop: 100,
+        paddingTop: 50,
     },
     subContainer: {
         fontSize: 15,
@@ -57,11 +60,11 @@ const styles = StyleSheet.create({
         position: 'absolute',
         paddingLeft: 28,
         paddingRight: 28,
-        paddingTop: 50,
+        paddingTop: 30,
         borderTopLeftRadius: 60,
         borderTopRightRadius: 60,
         width: '100%',
-        height: '85%',
+        height: '87%',
         bottom: 0,
         backgroundColor: theme.colors.violet100,
     },
@@ -97,13 +100,13 @@ const styles = StyleSheet.create({
     fingerprintText: {
         fontSize: 14,
         fontFamily: 'Poppins-SemiBold',
-        marginTop: 20,
+        marginTop: 0,
         textAlign: 'center',
         fontWeight: '600',
     },
     orText: {
         textAlign: 'center',
-        marginVertical: 10,
+        marginVertical: 5,
         color: '#555',
         fontSize: 13,
         fontFamily: 'Poppins-Light',
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
     },
     switchText: {
         textAlign: 'center',
-        marginTop: 10,
+        marginTop: 0,
         color: '#666',
         fontSize: 13,
         fontFamily: 'Poppins-Light',
@@ -127,7 +130,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins-SemiBold',
         marginLeft: 'auto',
         marginRight: 'auto',
-        marginTop: 20,
+        marginTop: 0,
     },
 });
 
