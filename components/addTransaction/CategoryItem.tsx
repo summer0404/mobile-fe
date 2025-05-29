@@ -17,7 +17,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ item, onPress }) => {
     >
       <View className={`items-center justify-center p-4 rounded-xl shadow-sm ${item.bgColor}`}>
         <MaterialCommunityIcons name={item.icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']} size={32} className={item.iconColor} />
-        <Text className={`mt-1.5 text-xs font-medium ${item.iconColor}`}>{item.name}</Text>
+        <Text className={`mt-1.5 text-xs font-pmedium ${item.iconColor}`}>{item.name}</Text>
       </View>
     </TouchableOpacity>
   );
