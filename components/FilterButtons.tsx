@@ -19,8 +19,8 @@ const FilterButtons: React.FC<FilterButtonsProps> = ({filters, activeFilter, set
                 }`}
               >
                 <Text
-                  className={`text-center font-semibold ${
-                    activeFilter === filter ? 'text-textLight' : 'text-textDark/70'
+                  className={`text-center font-pregular ${
+                    activeFilter === filter ? 'text-white' : 'text-black'
                   }`}
                 >
                   {filter}

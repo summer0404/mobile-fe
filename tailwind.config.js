@@ -14,6 +14,7 @@ module.exports = {
         secondary: {
           DEFAULT: "#FDE047",
         },
+        textMuted: '#A0A0A0',
       },
       fontFamily: {
         pthin: ["Poppins-Thin", "sans-serif"],

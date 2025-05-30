@@ -1,12 +1,162 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, Alert } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { useNavigation, useRouter } from 'expo-router'; // Make sure useRouter is imported
+import GoBackToHomeHeader from '@/components/GoBackToHomeHeader'
+import { ScrollView } from 'react-native-gesture-handler'
+import PrimaryButton from '@/components/addTransaction/PrimaryButton'
+import FormInput from '@/components/addTransaction/FormInput'
+import CategorySelector from '@/components/addTransaction/CategorySelector'
+import DateField from '@/components/addTransaction/DateField'
+import TransactionTypeToggle from '@/components/addTransaction/TransactionTypeToggle'
+import CategoryModal from '@/components/addTransaction/CategoryModal'
+import { Category, CategoryGroupData, NavItem, TransactionTypeId } from '../../components/addTransaction/types';
+import categories from '@/constants/categories'; 
+import numeral from 'numeral';
 
 const AddTransaction = () => {
-  return (
-    <View>
-      <Text>AddTransaction</Text>
-    </View>
-  )
-}
+  const router = useRouter(); // Initialize router
+  const [transactionType, setTransactionType] = useState<TransactionTypeId>('expense');
+  const [date, setDate] = useState<Date>(new Date());
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [amount, setAmount] = useState<string>('');
+  const [message, setMessage] = useState<string>('');
+  const [isCategoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const navigation = useNavigation();
 
-export default AddTransaction
+  // Listen for keyboard events to adjust UI accordingly
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+
+  const handleSave = () => {
+    // Your existing save logic (e.g., API call, local storage update)
+    console.log('Saved Data:', { transactionType, date, selectedCategory, amount, message });
+    
+    // Example: Add to dummyTransactions for now
+    // This is a placeholder. You should have a proper state management or API call here.
+    const newTransaction = {
+      id: String(Date.now()), // Simple unique ID
+      title: message.substring(0, 20) || selectedCategory?.name || 'Transaction', // Derive title
+      dateTime: date.toLocaleString(), // Format as needed
+      categoryDisplay: selectedCategory?.name || 'N/A',
+      amount: numeral(parseFloat(amount || "0")).format('0,0.00'), // Format amount string
+      amountRaw: transactionType === 'income' ? parseFloat(amount || "0") : -parseFloat(amount || "0"),
+      type: transactionType,
+      iconName: selectedCategory?.icon || 'help-circle-outline', // Default icon
+      dateObject: date,
+      detail: message,
+    };
+    // dummyTransactions.unshift(newTransaction); // Add to the beginning of the list (if dummyTransactions is mutable and accessible here)
+
+
+    Keyboard.dismiss(); // Hide keyboard after saving
+    Alert.alert("Success", "Transaction saved successfully!"); // Give user feedback
+
+    // Navigate to the transaction list screen
+    router.replace('/transaction'); // Or router.push('/transaction');
+                                  // consider router.back(); if it makes more sense in your flow
+  };
+
+  const handleCategorySelectFromModal = (category: Category) => {
+    setSelectedCategory(category);
+    setCategoryModalVisible(false);
+  };
+
+  return (
+    <SafeAreaView className='flex-1 bg-primary'>
+      <StatusBar />
+
+      {/* Fixed header section */}
+      <View className="p-6">
+        <GoBackToHomeHeader title='Add Transaction' />
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <View className="bg-primary-200 rounded-t-[50] flex-1">
+          <ScrollView
+            className="rounded-t-4xl flex-1"
+            contentContainerStyle={{
+              paddingTop: 24, paddingBottom: keyboardVisible ? 280 : 120
+            }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled" // Allow tapping inputs when keyboard is visible
+          >
+            <View className="p-6 space-y-5">
+              <TransactionTypeToggle
+                transactionType={transactionType}
+                onTypeChange={setTransactionType}
+              />
+              <DateField
+                label="Date"
+                date={date}
+                onDateChange={setDate}
+                required
+              />
+              <CategorySelector
+                label="Category"
+                selectedCategory={selectedCategory}
+                onOpenModal={() => setCategoryModalVisible(true)}
+                suggestedCategories={categories.suggestedCategoriesData} // Access the correct property
+                onSuggestedSelect={setSelectedCategory}
+                required
+              />
+
+              <FormInput
+                label="Amount"
+                value={amount} // Pass the raw numeric string
+                onChangeText={setAmount} // setAmount will receive the raw numeric string
+                placeholder="0" // Updated placeholder
+                formatAsCurrency={true} // Enable formatting
+                currencySymbol="$" // Optional: if you want to show a currency symbol
+                required
+              />
+              <FormInput
+                label="Enter Message"
+                value={message}
+                onChangeText={setMessage}
+                placeholder="Enter a message or note..."
+                multiline
+                numberOfLines={4} // This acts as a hint, especially for Android's initial render
+                inputWrapperStyle="h-28 items-start" // Pass the height here, items-start for alignment
+              // textInputStyle="h-full" // Optionally, explicitly tell TextInput to take full height if needed
+              // but className="... h-full" on TextInput itself should work.
+              />
+
+              <PrimaryButton
+                title="Save"
+                onPress={handleSave}
+                disabled={!selectedCategory || !amount}
+                style="mt-4" // NativeWind specific, keep as string
+              />
+            </View>
+          </ScrollView>
+
+          <CategoryModal
+            isVisible={isCategoryModalVisible}
+            onClose={() => setCategoryModalVisible(false)}
+            allCategories={categories.allCategoriesData} // Access the correct property
+            onSelectCategory={handleCategorySelectFromModal}
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
+export default AddTransaction;

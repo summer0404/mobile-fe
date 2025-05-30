@@ -1,13 +1,14 @@
 import "../global.css"
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import React from 'react'
-import { Slot, SplashScreen, Stack } from 'expo-router'
+import { Stack, SplashScreen } from 'expo-router'
 import { useFonts } from 'expo-font'
 import { useEffect } from 'react'
+import { GestureHandlerRootView } from "react-native-gesture-handler"
 
 SplashScreen.preventAutoHideAsync();
 
-const RootLayout = () => {
+export default function RootLayout() {
   const [fontsLoaded, error] = useFonts({
     "Poppins-Black": require("../assets/fonts/Poppins-Black.ttf"),
     "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
@@ -24,7 +25,7 @@ const RootLayout = () => {
     if (error) throw error;
 
     if (fontsLoaded) {
-      SplashScreen.hideAsync(); //hide the native spash screen immediately
+      SplashScreen.hideAsync();
     }
   }, [fontsLoaded, error]);
 
@@ -32,10 +33,9 @@ const RootLayout = () => {
     return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} >
-    <Stack.Screen name='index' options={{ headerShown: false }} />
-    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-  </Stack>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }} />
+    </GestureHandlerRootView>
+  );;
 }
-
-export default RootLayout

@@ -12,14 +12,13 @@ import Animated, {
 } from "react-native-reanimated";
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  // const { colors } = useTheme();
   const { buildHref } = useLinkBuilder();
 
   const [dimension, setDimensions] = useState({ height: 0, width: 0 });
 
   const numberOfTabs = state.routes.length;
   const buttonWidth = (dimension.width - 2 * 16) / numberOfTabs; // Actual tab width
-  const highlightWidth = buttonWidth - 10; 
+  const highlightWidth = buttonWidth - 10;
 
   const onTabbarLayout = (e: LayoutChangeEvent) => {
     setDimensions({
@@ -59,7 +58,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   }, [dimension.width, state.index, buttonWidth, highlightWidth]);
 
   return (
-    <View 
+    <View
       style={{
         position: 'absolute',
         bottom: 0,
@@ -73,7 +72,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         onLayout={onTabbarLayout}
       >
         {dimension.width > 0 && (
-          <Animated.View 
+          <Animated.View
             style={[animatedStyle, {
               position: "absolute",
               backgroundColor: '#7C3AED',
@@ -91,8 +90,8 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             options.tabBarLabel !== undefined
               ? options.tabBarLabel
               : options.title !== undefined
-              ? options.title
-              : route.name;
+                ? options.title
+                : route.name;
 
           const isFocused = state.index === index;
 
@@ -133,35 +132,6 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               color={isFocused ? "#fff" : "#000"}
               label={typeof label === "function" ? route.name : label}
             />
-            // <PlatformPressable
-
-            //   key={route.name}
-            //   href={buildHref(route.name, route.params)}
-            //   accessibilityState={isFocused ? { selected: true } : {}}
-            //   accessibilityLabel={options.tabBarAccessibilityLabel}
-            //   testID={options.tabBarButtonTestID}
-            //   onPress={onPress}
-            //   onLongPress={onLongPress}
-            //   style={{ flex: 1 }}
-            // >
-            //   <View
-            //   className='justify-between items-center gap 5'
-            //   >
-            //     {icon[route.name as keyof typeof icon]({
-            //       color: isFocused ? '#fff' : '#000'
-            //     })}
-            //     {/* <Text style={{ color: isFocused ? colors.primary : colors.text }}>
-            //       {typeof label === 'function'
-            //         ? label({
-            //           focused: isFocused,
-            //           color: isFocused ? colors.primary : colors.text,
-            //           position: 'below-icon',
-            //           children: route.name,
-            //         })
-            //         : label}
-            //     </Text> */}
-            //   </View>
-            // </PlatformPressable>
           );
         })}
       </View>

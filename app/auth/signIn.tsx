@@ -56,6 +56,8 @@ const styles = StyleSheet.create({
         paddingTop: 100,
     },
     subContainer: {
+        fontSize: 15,
+        fontFamily: 'Poppins-Medium',
         position: 'absolute',
         paddingLeft: 28,
         paddingRight: 28,
@@ -68,8 +70,8 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.violet100,
     },
     title: {
-        fontSize: 26,
-        fontWeight: 'bold',
+        fontSize: 30,
+        fontFamily: 'Poppins-SemiBold',
         color: theme.colors.whiteText,
         margin: 0,
         alignSelf: 'center',
@@ -92,18 +94,22 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     buttonText: {
+        fontSize: 14,
+        fontFamily: 'Poppins-Medium',
         color: '#fff',
-        fontWeight: 'bold'
     },
     fingerprintText: {
         marginTop: 20,
         textAlign: 'center',
-        fontWeight: '600',
+        fontSize: 14,
+        fontFamily: 'Poppins-SemiBold',
     },
     orText: {
         textAlign: 'center',
         marginVertical: 10,
-        color: '#555'
+        color: '#555',
+        fontSize: 13,
+        fontFamily: 'Poppins-Light',
     },
     iconRow: {
         flexDirection: 'row',
@@ -114,11 +120,14 @@ const styles = StyleSheet.create({
     switchText: {
         textAlign: 'center',
         marginTop: 10,
-        color: '#666'
+        color: '#666',
+        fontSize: 13,
+        fontFamily: 'Poppins-Light',
     },
     link: {
         color: '#6A0DAD',
-        fontWeight: 'bold',
+        fontSize: 14,
+        fontFamily: 'Poppins-SemiBold',
         marginLeft: 'auto',
         marginRight: 'auto',
         marginTop: 20,

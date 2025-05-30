@@ -7,9 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/utils/theme';
-import { handleGetDebt, handleUpdateDebt } from '../../../controller/DebtController';
-import { TransactionStatus, TransactionType } from '@/app/constants/enum';
+import CalendarIcon from '../../../assets/images/calendar.svg';
 
 export default function EditDebt() {
   const { id } = useLocalSearchParams();
@@ -133,28 +131,42 @@ export default function EditDebt() {
         <Ionicons name="notifications" size={24} color="#fff" />
       </View>
 
-      <View style={styles.content}>
-        <Text style={styles.label}>Name</Text>
-        <TextInput style={styles.input} value={form.name} onChangeText={val => handleChange('name', val)} />
+            {/* Content */}
+            <View style={styles.content}>
+                <Text style={styles.label}>Name</Text>
+                <TextInput
+                    style={styles.input}
+                    value={form.name}
+                    onChangeText={val => handleChange('name', val)}
+                    placeholder='Enter name here'
+                />
 
-        <Text style={styles.label}>Type</Text>
-        <DropDownPicker
-          open={openType}
-          setOpen={setOpenType}
-          value={form.type}
-          setValue={val => handleChange('type', val)}
-          items={typeItems}
-          zIndex={3000}
-          zIndexInverse={2000}
-        />
+                <View style={{ zIndex: 2000 }}>
+                    <Text style={styles.label}>Type</Text>
+                    <DropDownPicker
+                        listMode="SCROLLVIEW"
+                        open={openType}
+                        setOpen={setOpenType}
+                        items={typeItems}
+                        setItems={setTypeItems}
+                        value={form.type}
+                        setValue={val => handleChange('type', val())}
+                        zIndex={3000}
+                        zIndexInverse={2000}
+                        textStyle={styles.inputOption}
+                    />
 
-        <Text style={styles.label}>Amount</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={form.amount}
-          onChangeText={val => handleChange('amount', val)}
-        />
+                </View>
+
+
+                <Text style={styles.label}>Amount</Text>
+                <TextInput
+                    style={styles.input}
+                    keyboardType="numeric"
+                    value={form.amount}
+                    onChangeText={val => handleChange('amount', val)}
+                    placeholder='Enter amount here'
+                />
 
         <Text style={styles.label}>Debtor Name</Text>
         <TextInput
@@ -163,145 +175,173 @@ export default function EditDebt() {
           onChangeText={val => handleChange('debtorName', val)}
         />
 
-        <Text style={styles.label}>Detail</Text>
-        <TextInput
-          style={[styles.input, { height: 80 }]}
-          multiline
-          value={form.detail}
-          onChangeText={val => handleChange('detail', val)}
-        />
+                <Text style={styles.label}>Detail</Text>
+                <TextInput
+                    style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                    multiline={true}
+                    value={form.detail}
+                    onChangeText={val => handleChange('detail', val)}
+                    placeholder="Enter detail here"
+                />
 
-        <View style={styles.dateWrapper}>
-          <View style={styles.datePicker}>
-            <Text style={styles.label}>Debt Date</Text>
-            <TouchableOpacity onPress={() => setShowDebtDate(true)}>
-              <TextInput
-                style={styles.input}
-                value={formatDate(form.date)}
-                editable={false}
-              />
-            </TouchableOpacity>
-            {showDebtDate && (
-              <DateTimePicker
-                value={form.date}
-                mode="date"
-                display="default"
-                onChange={(e, selectedDate) => {
-                  setShowDebtDate(false);
-                  if (selectedDate) handleChange('date', selectedDate);
-                }}
-              />
-            )}
-          </View>
+                <View style={styles.dateWrapper}>
+                    <View style={styles.datePicker}>
+                        <Text style={styles.label}>Debt Date</Text>
+                        <TouchableOpacity onPress={() => setShowDebtDate(true)}>
+                            <TextInput
+                                style={[styles.input]}
+                                value={formatDate(form.debt_date)}
+                                editable={false}
+                            />
+                            <View style={{ position: 'absolute', top: 12, right: 10 }}>
+                                <CalendarIcon width={24} height={24} />
+                            </View>
+                        </TouchableOpacity>
+                        {showDebtDate && (
+                            <DateTimePicker
+                                value={form.debt_date}
+                                mode="date"
+                                display="default"
+                                onChange={(e, selectedDate) => {
+                                    setShowDebtDate(false);
+                                    if (selectedDate) handleChange('debt_date', selectedDate);
+                                }}
+                            />
+                        )}
+                    </View>
 
-          <View style={styles.datePicker}>
-            <Text style={styles.label}>Due Date</Text>
-            <TouchableOpacity onPress={() => setShowDueDate(true)}>
-              <TextInput
-                style={styles.input}
-                value={formatDate(form.dueDate)}
-                editable={false}
-              />
-            </TouchableOpacity>
-            {showDueDate && (
-              <DateTimePicker
-                value={form.dueDate}
-                mode="date"
-                display="default"
-                onChange={(e, selectedDate) => {
-                  setShowDueDate(false);
-                  if (selectedDate) handleChange('dueDate', selectedDate);
-                }}
-              />
-            )}
-          </View>
-        </View>
+                    <View style={styles.datePicker}>
+                        <Text style={styles.label}>Due Date</Text>
+                        <TouchableOpacity onPress={() => setShowDueDate(true)}>
+                            <TextInput
+                                style={[styles.input]}
+                                value={formatDate(form.due_date)}
+                                editable={false}
+                            />
+                            <View style={{ position: 'absolute', top: 12, right: 10 }}>
+                                <CalendarIcon width={24} height={24} />
+                            </View>
+                        </TouchableOpacity>
+                        {showDueDate && (
+                            <DateTimePicker
+                                value={form.due_date}
+                                mode="date"
+                                display="compact"
+                                onChange={(e, selectedDate) => {
+                                    setShowDueDate(false);
+                                    if (selectedDate) handleChange('due_date', selectedDate);
+                                }}
+                            />
+                        )}
+                    </View>
+                </View>
 
-        <Text style={styles.label}>Status</Text>
-        <DropDownPicker
-          open={openStatus}
-          setOpen={setOpenStatus}
-          value={form.status}
-          setValue={val => handleChange('status', val)}
-          items={statusItems}
-          zIndex={2000}
-          zIndexInverse={1000}
-        />
+                <View style={{ zIndex: 1000 }}>
+                    <Text style={styles.label}>Status</Text>
+                    <DropDownPicker
+                        listMode="SCROLLVIEW"
+                        open={openStatus}
+                        setOpen={setOpenStatus}
+                        items={statusItems}
+                        setItems={setStatusItems}
+                        value={form.status}
+                        setValue={val => handleChange('status', val())}
+                        zIndex={2000}
+                        zIndexInverse={2000}
+                        textStyle={styles.inputOption}
+                    />
+                </View>
 
         <View style={styles.buttonWrapper}>
           <TouchableOpacity style={styles.button} onPress={() => router.back()}>
             <Text style={styles.buttonText}>Cancel</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={handleSave}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
-  );
+                    <TouchableOpacity style={styles.button} onPress={handleSave}>
+                        {loadingAdd ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
+                    </TouchableOpacity>
+                </View>
+                <View style={{ height: 20 }} />
+            </View>
+        </ScrollView>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.violet600,
-  },
-  header: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.violet600,
-    padding: 32,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  loading: {
-    backgroundColor: theme.colors.violet100,
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    padding: 20,
-    paddingTop: 40,
-    backgroundColor: theme.colors.violet100,
-    borderTopLeftRadius: 60,
-    borderTopRightRadius: 60,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 5,
-    color: '#333',
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 10,
-    fontSize: 16,
-  },
-  dateWrapper: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  datePicker: {
-    flex: 1,
-  },
-  buttonWrapper: {
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'center',
-  },
-  button: {
-    backgroundColor: theme.colors.violet600,
-    padding: 15,
-    borderRadius: 30,
-    marginTop: 30,
-    alignItems: 'center',
-    minWidth: 100,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.violet600,
+    },
+    header: {
+        flexDirection: 'row',
+        backgroundColor: theme.colors.violet600,
+        padding: 30,
+        paddingBottom: 16,
+        paddingTop: 50,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    headerTitle: {
+        color: '#fff',
+        fontSize: 20,
+        fontFamily: 'Poppins-SemiBold',
+    },
+    loading: {
+        backgroundColor: theme.colors.violet100,
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    content: {
+        height: '100%',
+        padding: 30,
+        paddingTop: 30,
+        backgroundColor: theme.colors.violet100,
+        borderTopLeftRadius: 60,
+        borderTopRightRadius: 60,
+    },
+    label: {
+        fontSize: 14,
+        fontFamily: 'Poppins-Medium',
+        color: theme.colors.greenText,
+        marginTop: 10,
+        marginBottom: 0,
+    },
+    input: {
+        fontFamily: 'Poppins-Medium',
+        fontSize: 14,
+        lineHeight: 18,
+        backgroundColor: '#fff',
+        paddingHorizontal: 12,
+        height: 50,
+        borderRadius: 10,
+    },
+    inputOption: {
+        fontFamily: 'Poppins-Medium',
+        fontSize: 14,
+        lineHeight: 16,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+    },
+    dateWrapper: {
+        flexDirection: 'row',
+        gap: '5%',
+    },
+    buttonWrapper: {
+        flexDirection: 'row',
+        gap: '5%',
+        justifyContent: 'center',
+    },
+    datePicker: {
+        flex: 1,
+    },
+    button: {
+        backgroundColor: theme.colors.violet600,
+        padding: 15,
+        borderRadius: 30,
+        marginTop: 30,
+        alignItems: 'center',
+        minWidth: 100,
+    },
+    buttonText: { color: '#fff', fontWeight: '600' },
 });

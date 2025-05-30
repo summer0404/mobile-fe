@@ -28,6 +28,9 @@ export default function AuthTextInput({ label, value, onChangeText, isPassword =
                     placeholder={`Input your ${label.toLowerCase()}`}
                     placeholderTextColor="#999"
                     secureTextEntry={isPassword && !isPasswordVisible}
+                    autoCorrect={false}
+                    textContentType="oneTimeCode"
+                    autoCapitalize="none"
                 />
                 {isPassword && (
                     <Pressable style={styles.icon} onPress={togglePasswordVisibility}>
