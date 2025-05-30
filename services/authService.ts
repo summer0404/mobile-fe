@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.BE_URL || 'http://localhost:3010/api/v1'; // Fallback
+const API_BASE_URL = process.env.EXPO_PUBLIC_BE_URL;
 
 export interface UserProfile {
   id: number;
@@ -16,7 +16,7 @@ interface GetMeResponse {
   error?: string;
   rawErrorResponse?: string;
 }
-
+console.log("URL: ", API_BASE_URL);
 export const getMe = async (): Promise<GetMeResponse> => {
   const requestUrl = `${API_BASE_URL}/auth/me`;
   // console.log('[authService] Attempting to fetch user profile from:', requestUrl);
