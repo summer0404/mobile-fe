@@ -65,7 +65,7 @@ const Profile = () => {
     if (item.action) {
       item.action();
     } else if (item.navigateTo) {
-      router.push(item.navigateTo);
+      router.push(item.navigateTo as any);
     }
   };
 
@@ -118,4 +118,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default Profile

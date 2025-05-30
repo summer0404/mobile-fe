@@ -14,10 +14,10 @@ export default function SignIn() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.title}>Welcome</Text>
 
             <View style={styles.subContainer}>
-                <AuthTextInput label="Username" value={username} onChangeText={setUsername} />
+                <AuthTextInput label="Username or Email" value={username} onChangeText={setUsername} />
                 <AuthTextInput label="Password" value={password} onChangeText={setPassword} isPassword />
 
                 <TouchableOpacity
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
         position: 'relative',
         flex: 1,
         backgroundColor: theme.colors.violet600,
-        paddingTop: 100,
+        paddingTop: 50,
     },
     subContainer: {
         fontSize: 15,
@@ -61,11 +61,12 @@ const styles = StyleSheet.create({
         position: 'absolute',
         paddingLeft: 28,
         paddingRight: 28,
-        paddingTop: 50,
+        margin: 'auto',
+        paddingTop: 90,
         borderTopLeftRadius: 60,
         borderTopRightRadius: 60,
         width: '100%',
-        height: '85%',
+        height: '87%',
         bottom: 0,
         backgroundColor: theme.colors.violet100,
     },
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontFamily: 'Poppins-SemiBold',
         color: theme.colors.whiteText,
-        margin: 0,
+        marginBottom: 20,
         alignSelf: 'center',
     },
     button: {

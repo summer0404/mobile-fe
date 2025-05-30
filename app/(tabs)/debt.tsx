@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Pressable, RefreshControl } from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
 import { theme } from '../../utils/theme';
 import DebtList from '@/components/DebtList';
@@ -15,6 +15,7 @@ export default function Debt() {
   const [debts, setDebts] = useState<DebtItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'lend' | 'borrow'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,10 +58,23 @@ export default function Debt() {
     filter === 'all' ? true : debt.type === filter
   );
 
+
+  const onRefresh = () => {
+    setRefreshing(true);
+
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 2000);
+  };
+
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ flexGrow: 1 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
       <View style={styles.header}>
         <Pressable>
