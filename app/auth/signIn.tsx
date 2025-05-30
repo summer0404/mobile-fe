@@ -1,29 +1,48 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import AuthTextInput from '../../components/AuthTextInput';
 import { useState } from 'react';
-import { router } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import React from 'react';
 import { theme } from '../../utils/theme';
 import FacebookIcon from '../../assets/images/facebook.svg'
 import GoogleIcon from '../../assets/images/google.svg'
-
+import { logIn, LoginCredentials } from '@/services/authService';
 
 export default function SignIn() {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    const router = useRouter();
+    
+  const handleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const credentials: LoginCredentials = { email, password };
+    const response = await logIn(credentials);
+
+    setIsLoading(false);
+    if (response.success) {
+      console.log('Login successful:', response.message);
+      router.replace('/home'); 
+    } else {
+      setError(response.message || response.error || 'Login failed. Please check your credentials.');
+    }
+  };
+
 
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Welcome</Text>
 
             <View style={styles.subContainer}>
-                <AuthTextInput label="Username or Email" value={username} onChangeText={setUsername} />
+                <AuthTextInput label="Email" value={email} onChangeText={setEmail} />
                 <AuthTextInput label="Password" value={password} onChangeText={setPassword} isPassword />
 
                 <TouchableOpacity
-                    onPress={() => {
-                        router.replace("/(tabs)/home");
-                    }}
+                    onPress={handleSignIn}
                     style={styles.button}>
                     <Text style={styles.buttonText}>Sign In</Text>
                 </TouchableOpacity>

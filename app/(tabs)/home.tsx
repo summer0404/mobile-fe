@@ -46,7 +46,7 @@ const transactions = [
 ];
 
 const Home = () => {
-  const filters = ['daily', 'weekly', 'monthly']
+  const filters = ['Daily', 'Weekly', 'Monthly']
   const [activeFilter, setActiveFilter] = useState('daily');
 
   return (

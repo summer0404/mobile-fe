@@ -11,12 +11,11 @@ import {
     Switch, // Import Switch
     Platform,
     Alert,
-    ActivityIndicator, // Added ActivityIndicator import
+    ActivityIndicator,
+    TextInput, // Added ActivityIndicator import
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { getMe, UserProfile as ApiUserProfile } from '@/services/authService'; // Import getMe and UserProfile
-
-// Assuming FormInput component exists and is correctly pathed
+import { getMe, UserProfile as ApiUserProfile, UpdateUserProfileData, updateUser } from '@/services/authService'; // Import updateUser and UpdateUserProfileData
 import FormInput from '@/components/addTransaction/FormInput'; // Re-use FormInput or create a dedicated ProfileFormInput
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 import InitialsAvatar from '@/components/profile/InitialsAvatar';
@@ -26,7 +25,6 @@ interface UserProfileData extends Omit<ApiUserProfile, 'id' | 'createdAt' | 'tar
     password?: string;
     profilePictureUrl?: string | null;
     pushNotificationsEnabled: boolean;
-    // darkThemeEnabled: boolean; // This was in a previous version, ensure it's in initialFormState if kept
     target?: string;
     createdAt?: string;
 }
@@ -39,7 +37,6 @@ const initialFormState: UserProfileData = {
     password: '',
     profilePictureUrl: null,
     pushNotificationsEnabled: true,
-    // darkThemeEnabled: false, // Ensure consistency with UserProfileData
     target: '',
     createdAt: '',
 };
@@ -48,9 +45,9 @@ const initialFormState: UserProfileData = {
 const EditProfileScreen = () => {
     const router = useRouter();
     const [profileData, setProfileData] = useState<UserProfileData>(initialFormState);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // For initial data fetch
+    const [isSubmitting, setIsSubmitting] = useState(false); // For update submission
     const [error, setError] = useState<string | null>(null);
-    // const [selectedImage, setSelectedImage] = useState<string | null>(null); // For local image selection
 
 
     useEffect(() => {
@@ -58,12 +55,11 @@ const EditProfileScreen = () => {
             setIsLoading(true);
             setError(null);
             console.log("Calling getMe()...");
-            const response = await getMe(); // response is GetMeResponse
+            const response = await getMe();
             console.log("getMe() response:", JSON.stringify(response, null, 2));
 
             if (response.success && response.data && typeof response.data === 'object') {
-                // Ensure response.data has the necessary fields before trying to access them
-                const apiData = response.data as ApiUserProfile; // Cast after verifying it's an object
+                const apiData = response.data as ApiUserProfile;
 
                 if (typeof apiData.id === 'undefined') {
                     console.error("API response.data is missing 'id' field:", apiData);
@@ -76,12 +72,11 @@ const EditProfileScreen = () => {
                 setProfileData({
                     ...initialFormState,
                     id: String(apiData.id),
-                    firstName: apiData.firstName || '', // Fallback to empty string if undefined
-                    lastName: apiData.lastName || '',   // Fallback to empty string
-                    email: apiData.email || '',       // Fallback to empty string
-                    target: apiData.target,         // Already optional
-                    createdAt: apiData.createdAt,     // Already optional
-                    // Ensure other fields from initialFormState are preserved or updated if API provides them
+                    firstName: apiData.firstName || '',
+                    lastName: apiData.lastName || '',
+                    email: apiData.email || '',
+                    target: apiData.target,
+                    createdAt: apiData.createdAt,
                     pushNotificationsEnabled: initialFormState.pushNotificationsEnabled, // Or from apiData if available
                 });
             } else {
@@ -109,9 +104,61 @@ const EditProfileScreen = () => {
         setProfileData(prev => ({ ...prev, [field]: value }));
     };
 
-    // ... (handleChoosePhoto, handleUpdateProfile placeholders)
+    const handleUpdateProfile = async () => {
+        if (!profileData.id) {
+            Alert.alert("Error", "User ID is missing. Cannot update profile.");
+            return;
+        }
+        if (isSubmitting) return; // Prevent multiple submissions
 
-    if (isLoading) {
+        setIsSubmitting(true);
+        setError(null); // Clear previous errors
+
+        const dataToUpdate: UpdateUserProfileData = {
+            firstName: profileData.firstName,
+            lastName: profileData.lastName,
+            email: profileData.email,
+            target: profileData.target,
+            // Only include password if it's been changed and is not empty
+            ...(profileData.password && profileData.password.trim() !== '' && { password: profileData.password }),
+        };
+
+        // Optional: Remove undefined fields if your backend prefers that for PATCH
+        // Object.keys(dataToUpdate).forEach(key =>
+        //   (dataToUpdate as any)[key] === undefined && delete (dataToUpdate as any)[key]
+        // );
+
+        console.log("Attempting to update profile with:", dataToUpdate);
+        const response = await updateUser(profileData.id, dataToUpdate);
+        console.log("UpdateUser response:", JSON.stringify(response, null, 2));
+
+        setIsSubmitting(false);
+
+        if (response.success) {
+            Alert.alert("Success", response.message || "Profile updated successfully!");
+            // Optionally, update local state with response.data if it contains the full updated profile
+            if (response.data) {
+                setProfileData(prev => ({
+                    ...prev,
+                    firstName: response.data?.firstName || prev.firstName,
+                    lastName: response.data?.lastName || prev.lastName,
+                    email: response.data?.email || prev.email,
+                    target: response.data?.target || prev.target,
+                    password: '', // Clear password field after successful update
+                }));
+            } else {
+                // If no data in response, just clear password
+                 setProfileData(prev => ({ ...prev, password: '' }));
+            }
+            // router.back(); // Optionally navigate back
+        } else {
+            const errorMessage = response.message || response.error || "Could not update profile. Please try again.";
+            setError(errorMessage);
+            Alert.alert("Update Failed", errorMessage);
+        }
+    };
+
+    if (isLoading && !profileData.id) { // Show full screen loader only if no data is present yet
         return (
             <SafeAreaView className="flex-1 bg-primary justify-center items-center">
                 <ActivityIndicator size="large" color="#FFFFFF" />
@@ -162,6 +209,29 @@ const EditProfileScreen = () => {
                         inputWrapperStyle="bg-white/70"
                         containerStyle="mb-4"
                     />
+            
+                    {/* Display Target and CreatedAt if needed, likely non-editable */}
+                    {profileData.target !== undefined && ( // Check for undefined to show even if empty string
+                        <FormInput
+                            label="Target"
+                            value={profileData.target || ''} // Display empty string if null/undefined
+                            onChangeText={(val) => handleInputChange('target', val)} // Allow editing target
+                            placeholder="Enter your target amount"
+                            keyboardType="numeric"
+                            inputWrapperStyle="bg-white/70"
+                            containerStyle="mb-4"
+                        />
+                    )}
+                     {/* {profileData.createdAt && (
+                        <TextInput
+                            label="Member Since"
+                            value={new Date(profileData.createdAt).toLocaleDateString()} // Format date
+                            className="bg-gray-200/70"
+                            containerStyle="mb-4"
+                        />
+                    )} */}
+
+
                     {/* Toggle Switches */}
                     <View className="flex-row justify-between items-center py-3.5 px-1 mb-3">
                         <Text className="text-base text-textDark">Push Notifications</Text>
@@ -174,11 +244,17 @@ const EditProfileScreen = () => {
                         />
                     </View>
                     <TouchableOpacity
-                        // onPress={handleUpdateProfile} // Add this back when implemented
-                        className="bg-primary py-4 rounded-full items-center justify-center shadow-md"
+                        onPress={handleUpdateProfile}
+                        disabled={isSubmitting || isLoading} // Disable button while submitting or initial loading
+                        className={`py-4 rounded-full items-center justify-center shadow-md ${isSubmitting || isLoading ? 'bg-gray-400' : 'bg-primary'}`}
                     >
-                        <Text className="text-white font-psemibold text-base">Update Profile</Text>
+                        {isSubmitting ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text className="text-white font-psemibold text-base">Update Profile</Text>
+                        )}
                     </TouchableOpacity>
+                    {error && <Text className="text-red-500 text-center mt-4">{error}</Text>}
                 </ScrollView>
             </View>
 
