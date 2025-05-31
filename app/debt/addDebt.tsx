@@ -1,70 +1,106 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Pressable, Image } from 'react-native';
+import {
+    View, Text, TextInput, TouchableOpacity, ScrollView,
+    StyleSheet, ActivityIndicator, Pressable, ToastAndroid, Platform
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/utils/theme';
-import CalendarIcon from '../../assets/images/calendar.svg';
+import { handleAddDebt } from '../../controller/DebtController';
+import { TransactionStatus, TransactionType } from '../constants/enum';
 
 export default function AddDebt() {
     const router = useRouter();
 
     const [form, setForm] = useState({
         name: '',
-        type: '',
+        type: '' as TransactionType | '',
         amount: '',
-        debtor_name: '',
+        debtorName: '',
         detail: '',
-        debt_date: new Date(),
-        due_date: new Date(),
-        status: '',
+        date: new Date(),
+        dueDate: new Date(),
+        status: '' as TransactionStatus | '',
+        userId: 1,
     });
 
-    const [showDebtDate, setShowDebtDate] = useState(false);
+    const [showDate, setShowDate] = useState(false);
     const [showDueDate, setShowDueDate] = useState(false);
-
     const [openType, setOpenType] = useState(false);
-    const [typeValue, setTypeValue] = useState(null);
+    const [openStatus, setOpenStatus] = useState(false);
+    const [loading, setLoading] = useState(false);
+
     const [typeItems, setTypeItems] = useState([
-        { label: 'Lent', value: 'lend' },
-        { label: 'Borrowed', value: 'borrow' },
+        { label: 'Income', value: 'income' },
+        { label: 'Education', value: 'education' },
+        { label: 'Food', value: 'food' },
+        { label: 'Transport', value: 'transport' },
+        { label: 'Groceries', value: 'groceries' },
+        { label: 'Shopping', value: 'shopping' },
+        { label: 'Entertainment', value: 'entertainment' },
+        { label: 'Beauty', value: 'beauty' },
+        { label: 'Health', value: 'health' },
+        { label: 'Vacation', value: 'vacation' },
+        { label: 'Bill', value: 'bill' },
+        { label: 'Home', value: 'home' },
+        { label: 'Borrow', value: 'borrow' },
+        { label: 'Lend', value: 'lend' },
+        { label: 'Other', value: 'other' },
     ]);
 
-    const [openStatus, setOpenStatus] = useState(false);
-    const [statusValue, setStatusValue] = useState(null);
     const [statusItems, setStatusItems] = useState([
         { label: 'Pending', value: 'pending' },
         { label: 'Paid', value: 'paid' },
     ]);
 
-    const [loading, setLoading] = useState(false);
-
     const handleChange = (key: string, value: any) => {
         setForm(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleAdd = async () => {
-        setLoading(true);
-        try {
-            await fetch(`https://6829e5e9ab2b5004cb35235d.mockapi.io/debts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...form,
-                    amount: parseFloat(form.amount),
-                }),
-            });
-            router.push('/(tabs)/debt');
-        } catch (err) {
-            console.error('Error adding debt:', err);
-        } finally {
-            setLoading(false);
-        }
+    const formatDate = (date: Date | null) => {
+        if (!date) return '';
+        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
     };
 
-    const formatDate = (date: Date) => {
-        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+    const isValidForm = () => {
+        if (!form.name.trim() || !form.amount.trim() || isNaN(parseFloat(form.amount))) {
+            ToastAndroid.show('Name and amount must be valid.', ToastAndroid.SHORT);
+            return false;
+        }
+        if (!form.type || !form.status) {
+            ToastAndroid.show('Please select type and status.', ToastAndroid.SHORT);
+            return false;
+        }
+        return true;
+    };
+
+    const handleAdd = async () => {
+        if (!isValidForm()) return;
+
+        setLoading(true);
+
+        const payload = {
+            ...form,
+            type: form.type as TransactionType,
+            status: form.status as TransactionStatus,
+            amount: parseFloat(form.amount),
+            date: form.date ? new Date(form.date).toISOString() : new Date().toISOString(),
+            dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
+        };
+
+        await handleAddDebt(
+            payload,
+            () => {
+                setLoading(false);
+                router.push('/(tabs)/debt');
+            },
+            () => {
+                setLoading(false);
+                ToastAndroid.show('Error adding debt', ToastAndroid.SHORT);
+            }
+        );
     };
 
     return (
@@ -83,7 +119,6 @@ export default function AddDebt() {
                     style={styles.input}
                     value={form.name}
                     onChangeText={val => handleChange('name', val)}
-                    placeholder='Enter name here'
                 />
 
                 <View style={{ zIndex: 2000 }}>
@@ -95,7 +130,11 @@ export default function AddDebt() {
                         items={typeItems}
                         setItems={setTypeItems}
                         value={form.type}
-                        setValue={val => handleChange('type', val())}
+                        setValue={callback => {
+                            const val = callback(form.type);
+                            handleChange('type', val);
+                            return val;
+                        }}
                         zIndex={3000}
                         zIndexInverse={2000}
                         textStyle={styles.inputOption}
@@ -115,9 +154,8 @@ export default function AddDebt() {
                 <Text style={styles.label}>Debtor Name</Text>
                 <TextInput
                     style={styles.input}
-                    value={form.debtor_name}
-                    onChangeText={val => handleChange('debtor_name', val)}
-                    placeholder='Enter debtor name here'
+                    value={form.debtorName}
+                    onChangeText={val => handleChange('debtorName', val)}
                 />
 
                 <Text style={styles.label}>Detail</Text>
@@ -129,56 +167,52 @@ export default function AddDebt() {
                     placeholder="Enter detail here"
                 />
 
-                <View style={styles.dateWrapper}>
-                    <View style={styles.datePicker}>
-                        <Text style={styles.label}>Debt Date</Text>
-                        <TouchableOpacity onPress={() => setShowDebtDate(true)}>
-                            <TextInput
-                                style={[styles.input]}
-                                value={formatDate(form.debt_date)}
-                                editable={false}
-                            />
-                            <View style={{ position: 'absolute', top: 12, right: 10 }}>
-                                <CalendarIcon width={24} height={24} />
-                            </View>
-                        </TouchableOpacity>
-                        {showDebtDate && (
-                            <DateTimePicker
-                                value={form.debt_date}
-                                mode="date"
-                                display="default"
-                                onChange={(e, selectedDate) => {
-                                    setShowDebtDate(false);
-                                    if (selectedDate) handleChange('debt_date', selectedDate);
-                                }}
-                            />
-                        )}
-                    </View>
+                <View style={styles.datePicker}>
+                    <Text style={styles.label}>Date</Text>
+                    <TouchableOpacity onPress={() => setShowDate(true)}>
+                        <TextInput
+                            style={styles.input}
+                            value={formatDate(form.date)}
+                            editable={false}
+                            placeholder="Select Date"
+                            pointerEvents="none"
+                        />
+                    </TouchableOpacity>
+                    {showDate && (
+                        <DateTimePicker
+                            value={form.date || new Date()}
+                            mode="date"
+                            display="default"
+                            onChange={(e, selectedDate) => {
+                                setShowDate(false);
+                                if (selectedDate) handleChange('date', selectedDate);
+                            }}
+                        />
+                    )}
+                </View>
 
-                    <View style={[styles.datePicker, { position: 'relative' }]}>
-                        <Text style={styles.label}>Due Date</Text>
-                        <TouchableOpacity onPress={() => setShowDueDate(true)}>
-                            <TextInput
-                                style={[styles.input]}
-                                value={formatDate(form.due_date)}
-                                editable={false}
-                            />
-                            <View style={{ position: 'absolute', top: 12, right: 10 }}>
-                                <CalendarIcon width={24} height={24} />
-                            </View>
-                        </TouchableOpacity>
-                        {showDueDate && (
-                            <DateTimePicker
-                                value={form.due_date}
-                                mode="date"
-                                display="compact"
-                                onChange={(e, selectedDate) => {
-                                    setShowDueDate(false);
-                                    if (selectedDate) handleChange('due_date', selectedDate);
-                                }}
-                            />
-                        )}
-                    </View>
+                <View style={styles.datePicker}>
+                    <Text style={styles.label}>Due Date</Text>
+                    <TouchableOpacity onPress={() => setShowDueDate(true)}>
+                        <TextInput
+                            style={styles.input}
+                            value={formatDate(form.dueDate)}
+                            editable={false}
+                            placeholder="Select Date"
+                            pointerEvents="none"
+                        />
+                    </TouchableOpacity>
+                    {showDueDate && (
+                        <DateTimePicker
+                            value={form.dueDate || new Date()}
+                            mode="date"
+                            display="default"
+                            onChange={(e, selectedDate) => {
+                                setShowDueDate(false);
+                                if (selectedDate) handleChange('dueDate', selectedDate);
+                            }}
+                        />
+                    )}
                 </View>
 
                 <View style={{ zIndex: 1000 }} >
@@ -190,11 +224,13 @@ export default function AddDebt() {
                         items={statusItems}
                         setItems={setStatusItems}
                         value={form.status}
-                        setValue={val => handleChange('status', val())}
+                        setValue={callback => {
+                            const val = callback(form.status);
+                            handleChange('status', val);
+                            return val;
+                        }}
                         zIndex={2000}
-                        zIndexInverse={2000}
-                        textStyle={styles.inputOption}
-                        placeholder='Select status'
+                        zIndexInverse={1000}
                     />
                 </View>
                 <View style={styles.buttonWrapper}>
@@ -203,7 +239,9 @@ export default function AddDebt() {
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.button} onPress={handleAdd}>
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Add</Text>}
+                        {loading
+                            ? <ActivityIndicator color="#fff" />
+                            : <Text style={styles.buttonText}>Add</Text>}
                     </TouchableOpacity>
                 </View>
                 <View style={{ height: 30 }} />
@@ -229,8 +267,8 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         color: '#fff',
-        fontSize: 20,
-        fontFamily: 'Poppins-SemiBold',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
     content: {
         height: '100%',
@@ -261,17 +299,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 10,
     },
-    dateWrapper: {
-        flexDirection: 'row',
-        gap: '5%',
+    datePicker: {
+        marginTop: 10,
     },
     buttonWrapper: {
         flexDirection: 'row',
         gap: '5%',
         justifyContent: 'center',
-    },
-    datePicker: {
-        flex: 1,
     },
     button: {
         backgroundColor: theme.colors.violet600,
@@ -281,5 +315,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         minWidth: 100,
     },
-    buttonText: { color: '#fff', fontWeight: '600' },
+    buttonText: {
+        color: '#fff',
+        fontWeight: '600',
+    },
 });
