@@ -192,7 +192,7 @@ const AddTransaction = () => {
                 label="Transaction Name"
                 value={transactionNameInput}
                 onChangeText={setTransactionNameInput}
-                placeholder="e.g., April Salary, Groceries"
+                placeholder="Short name for the transaction"
                 required // Make it required
               />
               <FormInput

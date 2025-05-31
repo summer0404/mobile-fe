@@ -7,15 +7,14 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
-  Image,
   Alert,
   ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 import InitialsAvatar from '@/components/profile/InitialsAvatar';
-import { getMe, UserProfile as ApiUserProfile, logOut } from '@/services/authService'; // Make sure logOut is imported
+import { getMe, logOut } from '@/services/authService'; // Make sure logOut is imported
 
 // Define a type for profile menu items
 interface ProfileMenuItem {

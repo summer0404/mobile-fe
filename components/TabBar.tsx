@@ -1,6 +1,5 @@
-import { View, Platform, LayoutChangeEvent } from "react-native";
-import { useLinkBuilder, useTheme } from "@react-navigation/native";
-import { Text, PlatformPressable } from "@react-navigation/elements";
+import { View, LayoutChangeEvent } from "react-native";
+import { useLinkBuilder } from "@react-navigation/native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import React, { useState, useEffect } from "react";
 import TabBarButton from "./TabBarButton";

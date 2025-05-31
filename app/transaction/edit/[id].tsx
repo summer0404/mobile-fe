@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, Alert } from 'react-native';
+import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, Alert, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -9,58 +9,82 @@ import CategorySelector from '@/components/addTransaction/CategorySelector';
 import DateField from '@/components/addTransaction/DateField';
 import TransactionTypeToggle from '@/components/addTransaction/TransactionTypeToggle';
 import CategoryModal from '@/components/addTransaction/CategoryModal';
-import { Category, CategoryGroupData, TransactionTypeId, TransactionItemData } from '@/components/addTransaction/types'; // Ensure TransactionItemData is imported
-import dummyTransactions from '@/constants/dummyTransactions'; 
-import categories from '@/constants/categories'
-
+import { Category, TransactionTypeId, TransactionItemData } from '@/components/addTransaction/types';
+import categoriesData from '@/constants/categories'; // Renamed for clarity
+import { updateTransaction, UpdateTransactionData, TransactionType as ApiTransactionType } from '@/services/transactionsService';
+import { getMe } from '@/services/authService';
 
 const EditTransactionScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string; transactionData?: string }>();
   const [transaction, setTransaction] = useState<TransactionItemData | null>(null);
 
-  const [transactionType, setTransactionType] = useState<TransactionTypeId>('expense');
+  // Form state
+  const [uiTransactionType, setUiTransactionType] = useState<TransactionTypeId>('expense'); // 'income' or 'expense' for UI toggle
   const [date, setDate] = useState<Date>(new Date());
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null); // This holds {id, name, icon}
   const [amount, setAmount] = useState<string>('');
-  const [message, setMessage] = useState<string>(''); // Corresponds to 'detail'
+  const [detail, setDetail] = useState<string>(''); // Corresponds to 'detail'
+
+  // Modal and keyboard state
   const [isCategoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
+  // API call related state
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // useEffect(() => {
+  //   const fetchUserId = async () => {
+  //     setIsLoadingUserId(true);
+  //     const response = await getMe();
+  //     if (response.success && response.data?.id) {
+  //       setCurrentUserId(response.data.id);
+  //     } else {
+  //       Alert.alert("Error", "Could not load user information. Please try again.");
+  //       router.back(); // Or redirect to login
+  //     }
+  //     setIsLoadingUserId(false);
+  //   };
+  //   fetchUserId();
+  // }, [router]);
+
   useEffect(() => {
-    let initialTransaction: TransactionItemData | undefined;
     if (params.transactionData) {
       try {
-        const parsedData = JSON.parse(params.transactionData);
+        const parsedData = JSON.parse(params.transactionData) as TransactionItemData;
+        // Ensure dateObject is a Date instance
         if (parsedData.dateObject && typeof parsedData.dateObject === 'string') {
           parsedData.dateObject = new Date(parsedData.dateObject);
         }
-        initialTransaction = parsedData as TransactionItemData;
+        setTransaction(parsedData);
+        setUiTransactionType(parsedData.type); // UI type 'income' or 'expense'
+        setDate(new Date(parsedData.dateObject));
+        setAmount(String(Math.abs(parsedData.amountRaw))); // Edit absolute value
+        setDetail(parsedData.detail || '');
+
+        if (parsedData.type === 'expense') {
+            const categoryNameForLookup = parsedData.originalApiType;
+            const foundCategory = categoriesData.allCategoriesData
+              .flatMap(group => group.items)
+              .find(cat => cat.id.toLowerCase() === categoryNameForLookup?.toLowerCase());
+            setSelectedCategory(foundCategory || null);
+        } else {
+            setSelectedCategory(null); 
+        }
+
       } catch (e) {
         console.error("Failed to parse transactionData for edit:", e);
         Alert.alert("Error", "Could not load transaction data for editing.");
         router.back();
-        return;
       }
     } else if (params.id) {
-      // Fallback to find in dummy if not passed directly (though passing is better)
-      initialTransaction = dummyTransactions.find(t => t.id === params.id);
-    }
-
-    if (initialTransaction) {
-      setTransaction(initialTransaction);
-      setTransactionType(initialTransaction.type);
-      setDate(new Date(initialTransaction.dateObject)); // Ensure date is a Date object
-      // Find category object from allCategoriesData based on categoryDisplay or an ID if you have one
-      const foundCategory = categories.allCategoriesData.flatMap(group => group.items).find(cat => cat.name === initialTransaction.categoryDisplay);
-      setSelectedCategory(foundCategory || null);
-      setAmount(initialTransaction.amountRaw.toString()); // Use amountRaw for editing
-      setMessage(initialTransaction.detail || '');
-    } else {
-      Alert.alert("Error", "Transaction not found for editing.");
+      // Fallback or if you fetch by ID (not implemented here, relies on transactionData)
+      Alert.alert("Error", "Transaction data not provided directly. Please ensure data is passed.");
       router.back();
     }
-  }, [params.id, params.transactionData]);
+  }, [params.id, params.transactionData, router]);
+
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -71,31 +95,75 @@ const EditTransactionScreen = () => {
     };
   }, []);
 
-  const handleUpdate = () => {
-    if (!transaction) return;
+  const handleUpdate = async () => {
+    if (!transaction) {
+        Alert.alert("Error", "Transaction data is missing. Cannot update.");
+        return;
+    }
 
-    console.log('Updated Data:', {
-      id: transaction.id,
-      transactionType,
-      date,
-      selectedCategory,
-      amount,
-      message,
-    });
-    Alert.alert("Success", "Transaction updated (simulated).");
-    router.replace({ pathname: '/transaction/[id]', params: { id: transaction.id } });
+    if (uiTransactionType === 'expense' && !selectedCategory) {
+      Alert.alert("Validation Error", "Please select a category for your expense.");
+      return;
+    }
+    if (!amount) {
+      Alert.alert("Validation Error", "Please enter an amount.");
+      return;
+    }
+
     Keyboard.dismiss();
+    setIsUpdating(true);
+
+    const numericAmount = parseFloat(amount.replace(/[^0-9.]/g, ''));
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      Alert.alert("Invalid Amount", "Please enter a valid positive amount.");
+      setIsUpdating(false);
+      return;
+    }
+
+    const apiType: ApiTransactionType = uiTransactionType === 'income' ?
+      'income' : // Default 'income' type for API when UI tab is income
+      selectedCategory!.id as ApiTransactionType; // selectedCategory is guaranteed for expense by validation
+
+    const payload: UpdateTransactionData = {
+      name: transaction.title, // Or make name editable if needed
+      type: apiType,
+      amount: numericAmount,
+      detail: detail,
+      date: date.toISOString(),
+    };
+
+    console.log('Updating Transaction with ID:', transaction.id, 'Payload:', payload);
+
+    const response = await updateTransaction(transaction.id, payload);
+
+    setIsUpdating(false);
+
+    if (response.success && response.data) {
+      Alert.alert("Success", "Transaction updated successfully!");
+      router.back();
+    } else {
+      Alert.alert("Update Failed", response.message || response.error || "Could not update transaction.");
+    }
   };
 
   const handleCategorySelectFromModal = (category: Category) => {
     setSelectedCategory(category);
     setCategoryModalVisible(false);
+    // If the selected category implies a change in 'income' vs 'expense' for UI toggle:
+    // This depends on how your categories are structured.
+    // For example, if 'Salary' category is always 'income':
+    // if (category.name.toLowerCase() === 'salary' || category.name.toLowerCase() === 'income') { // Example
+    //   setUiTransactionType('income');
+    // } else {
+    //   setUiTransactionType('expense');
+    // }
   };
 
-  if (!transaction) {
+  if ( !transaction) {
     return (
       <SafeAreaView className="flex-1 bg-primary justify-center items-center">
-        <Text className="text-white">Loading transaction...</Text>
+        <ActivityIndicator size="large" color="#FFFFFF" />
+        <Text className="text-white mt-2">Loading transaction...</Text>
       </SafeAreaView>
     );
   }
@@ -121,8 +189,11 @@ const EditTransactionScreen = () => {
           >
             <View className="p-6 space-y-5">
               <TransactionTypeToggle
-                transactionType={transactionType}
-                onTypeChange={setTransactionType}
+                transactionType={uiTransactionType}
+                onTypeChange={(newType) => {
+                  setUiTransactionType(newType);
+                  setSelectedCategory(null); // Clear category when type changes
+                }}
               />
               <DateField
                 label="Date"
@@ -130,37 +201,43 @@ const EditTransactionScreen = () => {
                 onDateChange={setDate}
                 required
               />
-              <CategorySelector
-                label="Category"
-                selectedCategory={selectedCategory}
-                onOpenModal={() => setCategoryModalVisible(true)}
-                suggestedCategories={categories.suggestedCategoriesData} // You might want to adjust this
-                onSuggestedSelect={setSelectedCategory}
-                required
-              />
+              {uiTransactionType === 'expense' && (
+                <CategorySelector
+                  label="Category"
+                  selectedCategory={selectedCategory}
+                  onOpenModal={() => setCategoryModalVisible(true)}
+                  suggestedCategories={categoriesData.suggestedCategoriesData} // Consider filtering these for expense
+                  onSuggestedSelect={setSelectedCategory}
+                  required
+                />
+              )}
               <FormInput
                 label="Amount"
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="0"
-                formatAsCurrency={true}
+                formatAsCurrency={true} // Assuming your FormInput handles this
                 currencySymbol="$"
                 required
                 keyboardType="numeric"
               />
               <FormInput
                 label="Detail / Message"
-                value={message}
-                onChangeText={setMessage}
+                value={detail}
+                onChangeText={setDetail}
                 placeholder="Enter a message or note..."
                 multiline
                 numberOfLines={4}
                 inputWrapperStyle="h-28 items-start"
               />
               <PrimaryButton
-                title="Update Transaction"
+                title={isUpdating ? "Updating..." : "Update Transaction"}
                 onPress={handleUpdate}
-                disabled={!selectedCategory || !amount}
+                disabled={
+                  (uiTransactionType === 'expense' && !selectedCategory) ||
+                  !amount ||
+                  isUpdating
+                }
                 style="mt-4"
               />
             </View>
@@ -168,8 +245,9 @@ const EditTransactionScreen = () => {
           <CategoryModal
             isVisible={isCategoryModalVisible}
             onClose={() => setCategoryModalVisible(false)}
-            allCategories={categories.allCategoriesData} // Ensure this is available
+            allCategories={categoriesData.allCategoriesData}
             onSelectCategory={handleCategorySelectFromModal}
+            // currentTransactionType={uiTransactionType} // Pass this if modal needs to filter by type
           />
         </View>
       </KeyboardAvoidingView>

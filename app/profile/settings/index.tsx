@@ -28,18 +28,9 @@ interface SettingsMenuItem {
 
 const SettingsScreen = () => {
   const router = useRouter();
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true); // Example state
 
   const handlePasswordChange = () => {
     router.push('/profile/settings/password');
-    Alert.alert("Change Password", "Navigation to change password screen to be implemented.");
-  };
-
-  const handleTogglePushNotifications = (value: boolean) => {
-    setPushNotificationsEnabled(value);
-    // Here you would typically also save this preference, e.g., to AsyncStorage or backend
-    console.log("Push notifications toggled:", value);
-    Alert.alert("Notifications", `Push notifications ${value ? 'enabled' : 'disabled'}.`);
   };
 
   const settingsMenuItems: SettingsMenuItem[] = [
@@ -48,20 +39,7 @@ const SettingsScreen = () => {
       label: 'Change Password',
       iconName: 'lock-reset',
       action: handlePasswordChange,
-      // navigateTo: '/profile/settings/change-password', // Or navigate directly
     },
-    {
-      id: 'notifications',
-      label: 'Push Notifications',
-      iconName: 'bell-outline',
-      isToggle: true,
-      toggleValue: pushNotificationsEnabled,
-      onToggleChange: handleTogglePushNotifications,
-    },
-    // Add more settings items here
-    // { id: 'dark-mode', label: 'Dark Mode', iconName: 'theme-light-dark', isToggle: true, toggleValue: false, onToggleChange: (val) => console.log("Dark mode", val) },
-    // { id: 'privacy', label: 'Privacy Policy', iconName: 'shield-account-outline', navigateTo: '/privacy-policy' },
-    // { id: 'terms', label: 'Terms of Service', iconName: 'file-document-outline', navigateTo: '/terms-of-service' },
   ];
 
   const handleMenuItemPress = (item: SettingsMenuItem) => {
@@ -106,7 +84,7 @@ const SettingsScreen = () => {
               <View className={`w-10 h-10 bg-accent/20 rounded-lg justify-center items-center mr-4`}>
                 <MaterialCommunityIcons name={item.iconName} size={24} className="text-accent" />
               </View>
-              <Text className="text-base text-textDark flex-1">{item.label}</Text>
+              <Text className="text-base text-black flex-1">{item.label}</Text>
               {item.isToggle && item.onToggleChange ? (
                 <Switch
                   trackColor={{ false: "#E0E0E0", true: "#C9A0DC" }} // Example colors

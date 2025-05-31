@@ -13,7 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { getMe } from '@/services/authService'
 import { getAllTransactions, Transaction as ApiTransaction, GetAllTransactionsParams, PaginatedTransactionsResponse } from '@/services/transactionsService'
 import { mapApiTransactionToHomeListItem, HomeTransactionListItem } from '@/utils/dataTransformers'
-
+import InitialsAvatar from '@/components/profile/InitialsAvatar'
 const Home = () => {
   const filters = ['Daily', 'Weekly', 'Monthly'] // These filters are not yet used for fetching
   const [activeFilter, setActiveFilter] = useState('daily');
@@ -22,29 +22,36 @@ const Home = () => {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [isLoadingUserId, setIsLoadingUserId] = useState(true);
 
-  const [homeApiTransactions, setHomeApiTransactions] = useState<ApiTransaction[]>([]); // This will store items
-  // const [homeMeta, setHomeMeta] = useState<PaginatedTransactionsResponse['meta'] | null>(null); // Optional
-
+  const [homeApiTransactions, setHomeApiTransactions] = useState<ApiTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
 
-  // Fetch User ID
+  // State for HomeOverview2 data
+  const [revenue, setRevenue] = useState(0);
+  const [foodExpense, setFoodExpense] = useState(0);
+  const [isLoadingOverviewData, setIsLoadingOverviewData] = useState(false);
+  const [overviewDataError, setOverviewDataError] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+
+  // Fetch User information
   useEffect(() => {
     const fetchUserId = async () => {
       setIsLoadingUserId(true);
       const response = await getMe();
       if (response.success && response.data?.id) {
         setCurrentUserId(response.data.id);
+        setFirstName(response.data.firstName)
+        setLastName(response.data.lastName)
       } else {
-        console.error("Home: Failed to fetch user ID:", response.message || response.error);
-        // Optionally show an alert or handle error for user ID fetching
+        console.error("Home: Failed to fetch user Info:", response.message || response.error);
       }
       setIsLoadingUserId(false);
     };
     fetchUserId();
   }, []);
 
-  // Fetch Home Transactions
+  // Fetch Home Transactions (recent 3)
   const fetchHomeTransactions = useCallback(async () => {
     if (!currentUserId) {
       setHomeApiTransactions([]);
@@ -65,9 +72,6 @@ const Home = () => {
     if (response.success && response.data) {
       if (response.data.items && Array.isArray(response.data.items)) {
         setHomeApiTransactions(response.data.items);
-        // if (response.data.meta) { // Optional
-        //     setHomeMeta(response.data.meta);
-        // }
       } else {
         console.warn("Home: Unexpected data format for home transactions, items missing or not an array:", response.data);
         setHomeApiTransactions([]);
@@ -80,12 +84,109 @@ const Home = () => {
     setIsLoadingTransactions(false);
   }, [currentUserId]);
 
+  // Fetch data for HomeOverview2 (revenue and food expenses)
+  const fetchFinancialOverview = useCallback(async () => {
+    if (!currentUserId) {
+      setRevenue(0);
+      setFoodExpense(0);
+      return;
+    }
+    setIsLoadingOverviewData(true);
+    setOverviewDataError(null);
+    let calculatedRevenue = 0;
+    let calculatedFoodExpense = 0;
+
+    // Calculate the date for Monday of the current week
+    const today = new Date();
+    const currentDayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+    let daysToSubtract = currentDayOfWeek - 1;
+    if (currentDayOfWeek === 0) { // If it's Sunday
+      daysToSubtract = 6; // Go back 6 days to get Monday
+    }
+    const mondayDate = new Date(today);
+    mondayDate.setDate(today.getDate() - daysToSubtract);
+    mondayDate.setHours(0, 0, 0, 0); // Normalize to the start of the day
+    const mondayTimestamp = mondayDate.getTime(); // Get timestamp
+
+    try {
+      // Fetch all income transactions from the start of this week
+      const incomeParams: GetAllTransactionsParams = {
+        userId: currentUserId,
+        type: 'income',
+        limit: 10000,
+        createFrom: mondayTimestamp.toString(),
+      };
+      const incomeResponse = await getAllTransactions(incomeParams);
+
+      if (!incomeResponse.success) {
+        if (
+          (incomeResponse.message === "Session expired. Please log in")
+        ) {
+          router.replace('/auth/signIn');
+          return; // Stop further execution
+        }
+        console.warn("Home: Failed to fetch income for overview:", incomeResponse.message || incomeResponse.error);
+      } else if (incomeResponse.data?.items) {
+        calculatedRevenue = incomeResponse.data.items.reduce((sum, transaction) => {
+          return sum + parseFloat(String(transaction.amount) || '0');
+        }, 0);
+      }
+
+      // Fetch all food expense transactions
+      const foodParams: GetAllTransactionsParams = {
+        userId: currentUserId,
+        type: 'food',
+        limit: 10000,
+      };
+      const foodResponse = await getAllTransactions(foodParams);
+
+      if (!foodResponse.success) {
+        if (
+          (incomeResponse.message === "Session expired. Please log in")
+        ) {
+          router.replace('/auth/signIn');
+          return; // Stop further execution
+        }
+        console.warn("Home: Failed to fetch food expenses for overview:", foodResponse.message || foodResponse.error);
+      } else if (foodResponse.data?.items) {
+        calculatedFoodExpense = foodResponse.data.items.reduce((sum, transaction) => {
+          return sum + Math.abs(parseFloat(String(transaction.amount) || '0'));
+        }, 0);
+      }
+      
+      setRevenue(calculatedRevenue);
+      setFoodExpense(calculatedFoodExpense);
+
+      // if ((!incomeResponse.success || !foodResponse.success) && !overviewDataError) {
+      //    // Set a general error if any part failed (and not already handled by a 401 redirect)
+      //    // Avoid setting this if a 401 redirect is already in progress or caught
+      //    const isNavigating = router.pathname === '/auth/signIn'; // A simple check, might need refinement
+      //    if(!isNavigating) setOverviewDataError("Could not load some financial data.");
+      // }
+
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        router.replace('/auth/signIn');
+        return; 
+      } else {
+        console.error("Home: Error fetching financial overview data:", error);
+        setOverviewDataError("Could not load financial overview.");
+        setRevenue(0); 
+        setFoodExpense(0);
+      }
+    } finally {
+      setIsLoadingOverviewData(false);
+    }
+  }, [currentUserId, router]); // Added router to dependencies
+
+
   useFocusEffect(
     useCallback(() => {
       if (currentUserId) {
         fetchHomeTransactions();
+        fetchFinancialOverview(); // Fetch overview data as well
       }
-    }, [currentUserId, fetchHomeTransactions])
+    }, [currentUserId, fetchHomeTransactions, fetchFinancialOverview])
   );
 
   const displayedHomeTransactions: HomeTransactionListItem[] = useMemo(() => {
@@ -99,21 +200,20 @@ const Home = () => {
     router.push('/transaction');
   };
 
-  // TODO: Fetch actual revenue and food data for HomeOverview2
-  const revenue = 4000000; // Placeholder
-  const foodExpense = 1000; // Placeholder
-
   return (
     <SafeAreaView className='flex-1 bg-primary'>
       <StatusBar />
       <ScrollView>
         <View className="p-6">
-          <HomeHeader />
+          <HomeHeader firstName={firstName} lastName={lastName}/>
           <HomeOverview />
         </View>
         <View className="bg-primary-200 rounded-t-[50] mt-5 px-6 py-8 min-h-screen ">
-          <HomeOverview2 revenue={revenue} food={foodExpense} />
-          <FilterButtons filters={filters} activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+          <HomeOverview2 
+            revenue={revenue} 
+            food={foodExpense} 
+          />
+          {/* <FilterButtons filters={filters} activeFilter={activeFilter} setActiveFilter={setActiveFilter} /> */}
 
           <TouchableOpacity
             onPress={handleGoToAllTransactions}

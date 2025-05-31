@@ -39,7 +39,6 @@ export interface CreateTransactionData {
 }
 
 export interface UpdateTransactionData {
-  userId?: number;
   name?: string;
   type?: TransactionType;
   amount?: number;
@@ -256,6 +255,118 @@ export const getAllTransactions = async (
     return {
       success: false,
       message: 'A network error occurred while fetching transactions.',
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+/**
+ * Get All Expense Transactions (Now with Params and Pagination)
+ * GET /api/v1/transactions/expenses
+ */
+export const getAllExpenseTransactions = async (
+  params?: GetAllTransactionsParams // Added params argument
+): Promise<ApiResponse<PaginatedTransactionsResponse>> => { // Updated return type
+  let queryString = '';
+  if (params) {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value));
+      }
+    });
+    queryString = queryParams.toString();
+  }
+
+  const requestUrl = `${API_BASE_URL}/transactions/expenses${queryString ? `?${queryString}` : ''}`;
+  console.log('[transactionsService] Getting all expense transactions from:', requestUrl);
+
+  try {
+    const response = await fetch(requestUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    const responseText = await response.text();
+    console.log('[transactionsService] GetAllExpenseTransactions Response Status:', response.status);
+
+    if (!response.ok) {
+      console.error(`[transactionsService] GetAllExpenseTransactions API failed with status ${response.status}.`);
+      try {
+        const errorData = JSON.parse(responseText);
+        return {
+          success: false,
+          message: errorData.message || `Failed to fetch expense transactions: ${response.status}`,
+          error: errorData.error || errorData.message,
+          rawErrorResponse: responseText.substring(0, 500),
+        };
+      } catch (e) {
+        return {
+          success: false,
+          message: `Failed to fetch expense transactions: ${response.status}. Server returned non-JSON response.`,
+          error: `Received non-JSON response. Status: ${response.status}`,
+          rawErrorResponse: responseText.substring(0, 500),
+        };
+      }
+    }
+
+    try {
+      const parsedResponse = JSON.parse(responseText);
+
+      // Assuming the updated API returns a structure similar to getAllTransactions
+      // i.e., { message: "...", data: { items: [], meta: {} } }
+      if (parsedResponse.data && Array.isArray(parsedResponse.data.items) && parsedResponse.data.meta) {
+        return {
+          success: true,
+          message: parsedResponse.message || 'Expense transactions fetched successfully',
+          data: parsedResponse.data, // data is { items: Transaction[], meta: {...} }
+          currentPage: parsedResponse.data.meta.currentPage,
+          totalPages: parsedResponse.data.meta.totalPages,
+          totalItems: parsedResponse.data.meta.totalItems,
+        };
+      } else if (Array.isArray(parsedResponse.data)) { 
+        // Fallback: if API returns { message: "...", data: [] }
+        console.warn('[transactionsService] GetAllExpenseTransactions response.data is a direct array. Wrapping in PaginatedTransactionsResponse.');
+        return {
+            success: true,
+            message: parsedResponse.message || 'Expense transactions fetched successfully (as direct array in data field)',
+            data: { items: parsedResponse.data as Transaction[], meta: {} }
+        };
+      } else if (Array.isArray(parsedResponse)) {
+        // Fallback: if the API unexpectedly returns a direct array at the root
+        console.warn('[transactionsService] GetAllExpenseTransactions response is a direct array. Wrapping in PaginatedTransactionsResponse.');
+        return {
+            success: true,
+            message: 'Expense transactions fetched successfully (as direct array)',
+            data: { items: parsedResponse as Transaction[], meta: {} }
+        };
+      }
+      else {
+        console.error('[transactionsService] GetAllExpenseTransactions parsed response is not a recognized paginated format:', parsedResponse);
+        return {
+          success: false,
+          message: 'Server response for expense transactions was not in the expected paginated format.',
+          error: 'Invalid data structure',
+          rawErrorResponse: responseText.substring(0, 500),
+        };
+      }
+    } catch (jsonParseError) {
+      console.error('[transactionsService] GetAllExpenseTransactions JSON parsing failed:', jsonParseError);
+      return {
+        success: false,
+        message: 'Failed to parse successful server response for get all expense transactions.',
+        error: (jsonParseError as Error).message,
+        rawErrorResponse: responseText.substring(0, 500),
+      };
+    }
+  } catch (error) {
+    console.error('[transactionsService] GetAllExpenseTransactions network error:', error);
+    return {
+      success: false,
+      message: 'A network error occurred while fetching expense transactions.',
       error: error instanceof Error ? error.message : String(error),
     };
   }

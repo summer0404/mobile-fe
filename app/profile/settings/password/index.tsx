@@ -139,7 +139,7 @@ const ChangePasswordScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text className="text-lg font-psemibold text-textDark mb-6 text-center">
+          <Text className="text-lg font-psemibold text-black mb-6 text-center">
             Update Your Password
           </Text>
 

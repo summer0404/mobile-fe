@@ -22,26 +22,26 @@ const TabsLayout = () => {
 
   return (
     <Tabs 
-      // Conditionally render the TabBar component itself
-      tabBar={(props) => {
-        if (keyboardVisible) {
-          return null; // Don't render the TabBar when keyboard is visible
-        }
-        return <TabBar {...props} />; // Render it otherwise
+      tabBar={(props: React.ComponentProps<typeof TabBar>) => {
+      if (keyboardVisible) {
+        return null;
+      }
+      return <TabBar {...props} />;
       }}
       screenOptions={{
-        headerShown: false,
+      headerShown: false,
       }}
     >
       <Tabs.Screen name="home" options={{ title: "Home" }} />
       <Tabs.Screen name="analysis" options={{ title: "Analysis" }} />
-      <Tabs.Screen name="debt" options={{ title: "Debt" }} />
+      
       <Tabs.Screen 
-        name="add_transaction" 
-        options={{ 
-          title: "Transaction",
-        }} 
+      name="add_transaction" 
+      options={{ 
+        title: "Transaction",
+      }} 
       />
+      <Tabs.Screen name="debt" options={{ title: "Debt" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
   );

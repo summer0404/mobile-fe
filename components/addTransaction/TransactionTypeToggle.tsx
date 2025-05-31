@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  textBase: { // Approximates: "font-semibold ml-1.5"
-    // For "font-semibold", you'd need to use the actual Poppins-SemiBold font if loaded
+  textBase: { // Approximates: "font-psemibold ml-1.5"
+    // For "font-psemibold", you'd need to use the actual Poppins-SemiBold font if loaded
     fontFamily: 'Poppins-SemiBold', // Assuming you have this font loaded
     fontWeight: '600', // Fallback if font family isn't set up for StyleSheet
     marginLeft: 6, // ml-1.5 (0.375rem = 6px)

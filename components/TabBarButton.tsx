@@ -1,4 +1,4 @@
-import { View, Text, Pressable, GestureResponderEvent } from "react-native";
+import { View, Pressable, GestureResponderEvent } from "react-native";
 import React from "react";
 import { icon } from "@/constants/icon";
 import Animated, {interpolate, useAnimatedStyle, useSharedValue, withSpring} from 'react-native-reanimated'
@@ -48,16 +48,6 @@ const TabBarButton = ({
             color: isFocused ? "#fff" : "#000",
             })}
         </Animated.View>
-        {/* <Text style={{ color: isFocused ? colors.primary : colors.text }}>
-                    {typeof label === 'function'
-                      ? label({
-                        focused: isFocused,
-                        color: isFocused ? colors.primary : colors.text,
-                        position: 'below-icon',
-                        children: route.name,
-                      })
-                      : label}
-                  </Text> */}
       </View>
     </Pressable>
   );

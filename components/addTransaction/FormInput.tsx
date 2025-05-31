@@ -58,7 +58,7 @@ const FormInput: React.FC<FormInputProps> = ({
     : value;
 
   // Base TextInput classes
-  let baseTextInputClasses = "flex-1 text-textDark";
+  let baseTextInputClasses = "flex-1 text-black";
   if (multiline) {
     // For multiline, allow text to wrap and potentially grow
     baseTextInputClasses += " h-full"; // Ensure it takes available height if multiline
@@ -72,13 +72,13 @@ const FormInput: React.FC<FormInputProps> = ({
 
   return (
     <View className={containerStyle as string}>
-      <Text className="text-sm font-medium text-textDark mb-1.5">
+      <Text className="text-sm font-pmedium text-black mb-1.5">
         {label}
         {required && <Text className="text-red-500">*</Text>}
       </Text>
       <View className={`bg-white p-3.5 rounded-lg shadow-sm flex-row items-center ${inputWrapperStyle as string}`}>
         {formatAsCurrency && currencySymbol && value ? (
-          <Text className="text-textDark mr-1 mt-0.5">{currencySymbol}</Text>
+          <Text className="text-black mr-1 mt-0.5">{currencySymbol}</Text>
         ) : null}
         <TextInput
           className={combinedTextInputStyle}

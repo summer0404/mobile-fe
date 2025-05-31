@@ -7,18 +7,53 @@ import { theme } from '../../utils/theme';
 import FacebookIcon from '../../assets/images/facebook.svg'
 import GoogleIcon from '../../assets/images/google.svg'
 import { logIn, LoginCredentials } from '@/services/authService';
+import CustomAlert, { AlertButton } from '@/components/Alert'; // Import AlertButton here
 
 export default function SignIn() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [alertVisible, setAlertVisible] = useState(false);
+    
+    const [alertConfig, setAlertConfig] = useState<{
+        title: string;
+        message: string;
+        buttons: AlertButton[]; // This will now use the imported AlertButton
+        type: 'success' | 'error' | 'warning' | 'info';
+    }>({
+        title: '',
+        message: '',
+        buttons: [],
+        type: 'info',
+    });
     
     const router = useRouter();
     
   const handleSignIn = async () => {
+    // Client-side validation
+    if (!email.trim()) {
+      setAlertConfig({
+        title: "Validation Error",
+        message: "Please enter your email address.",
+        buttons: [{ text: "OK", onPress: () => setAlertVisible(false), style: 'primary' }],
+        type: 'warning',
+      });
+      setAlertVisible(true);
+      return;
+    }
+
+    if (!password) {
+      setAlertConfig({
+        title: "Validation Error",
+        message: "Please enter your password.",
+        buttons: [{ text: "OK", onPress: () => setAlertVisible(false), style: 'primary' }],
+        type: 'warning',
+      });
+      setAlertVisible(true);
+      return;
+    }
+
     setIsLoading(true);
-    setError(null);
 
     const credentials: LoginCredentials = { email, password };
     const response = await logIn(credentials);
@@ -28,7 +63,13 @@ export default function SignIn() {
       console.log('Login successful:', response.message);
       router.replace('/home'); 
     } else {
-      setError(response.message || response.error || 'Login failed. Please check your credentials.');
+      setAlertConfig({
+        title: "Login Failed",
+        message: response.message || response.error || 'Login failed. Please check your credentials.',
+        buttons: [{ text: "OK", onPress: () => setAlertVisible(false), style: 'primary' }],
+        type: 'error',
+      });
+      setAlertVisible(true);
     }
   };
 
@@ -43,8 +84,10 @@ export default function SignIn() {
 
                 <TouchableOpacity
                     onPress={handleSignIn}
-                    style={styles.button}>
-                    <Text style={styles.buttonText}>Sign In</Text>
+                    style={[styles.button, isLoading && styles.buttonLoading]}
+                    disabled={isLoading}
+                >
+                    <Text style={styles.buttonText}>{isLoading ? "Signing In..." : "Sign In"}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity>
@@ -63,6 +106,14 @@ export default function SignIn() {
                     Don’t have an account? <Text style={styles.link} onPress={() => router.replace('/auth/signUp')}>Sign Up</Text>
                 </Text>
             </View>
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                type={alertConfig.type}
+                onDismiss={() => setAlertVisible(false)}
+            />
         </View>
     );
 }
@@ -105,6 +156,10 @@ const styles = StyleSheet.create({
         marginTop: 10,
         marginLeft: 'auto',
         marginRight: 'auto',
+    },
+    buttonLoading: {
+        backgroundColor: '#cccccc', // A generic grey color
+        // Or use a grey from your theme if available, e.g., theme.colors.grey300
     },
     secondaryButton: {
         backgroundColor: '#a370f7',

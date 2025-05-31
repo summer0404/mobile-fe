@@ -431,3 +431,106 @@ export const changePassword = async (passwordData: ChangePasswordData): Promise<
     return { success: false, message: 'An unexpected network error occurred during password change.' };
   }
 };
+
+export interface RefreshTokenData {
+  accessToken: string;
+  refreshToken?: string; // Optional: some APIs might return a new refresh token
+}
+
+interface RefreshTokenResponse {
+  success: boolean;
+  data?: RefreshTokenData; // This is where app/index.tsx expects accessToken
+  message?: string;
+  error?: string;
+  rawErrorResponse?: string;
+}
+
+export const refreshToken = async (storedRefreshToken: string): Promise<RefreshTokenResponse> => {
+  const requestUrl = `${API_BASE_URL}/auth/refresh`;
+  console.log('[authService] Attempting to refresh token from:', requestUrl);
+
+  try {
+    const response = await fetch(requestUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Pass the storedRefreshToken if your API expects it in headers/body.
+      // If it's an HttpOnly cookie managed by the browser/OS, 'credentials: include' is key.
+      // Example if sending as Bearer token (less common for refresh tokens):
+      // headers: { 'Authorization': `Bearer ${storedRefreshToken}` },
+      credentials: 'include',
+    });
+
+    const responseText = await response.text();
+    console.log('[authService] RefreshToken Response Status:', response.status);
+
+    if (!response.ok) {
+      console.error(`[authService] RefreshToken API failed with status ${response.status}.`);
+      try {
+        const errorData = JSON.parse(responseText);
+        return {
+          success: false,
+          message: errorData.message || `Token refresh failed: ${response.status}`,
+          error: errorData.error || errorData.message,
+          rawErrorResponse: responseText.substring(0, 500),
+        };
+      } catch (e) {
+        return {
+          success: false,
+          message: `Token refresh failed: ${response.status}. Server returned non-JSON response.`,
+          error: `Received non-JSON response. Status: ${response.status}`,
+          rawErrorResponse: responseText.substring(0, 500),
+        };
+      }
+    }
+
+    // If response.ok is true
+    try {
+      const responseData = JSON.parse(responseText); // e.g. { message: "Success", data: null }
+
+      // Case 1: API provides new tokens in responseData.data
+      if (responseData.data && responseData.data.accessToken) {
+        return {
+          success: true,
+          message: responseData.message || "Token refreshed successfully",
+          data: responseData.data as RefreshTokenData,
+        };
+      }
+      // Case 2: API call is successful (e.g. 200 OK), message indicates success, but data is explicitly null
+      // This implies HttpOnly cookies might have been updated, but no tokens in body.
+      else if (responseData.message && responseData.data === null) {
+        console.log('[authService] RefreshToken HTTP call successful (data: null), but no new tokens in response body.');
+        return {
+          success: true, // The HTTP call itself was successful
+          message: responseData.message,
+          data: undefined, // Explicitly indicate no token data from body for AsyncStorage
+        };
+      }
+      // Case 3: Response is OK, but structure is not as expected for tokens.
+      else {
+        console.error('[authService] RefreshToken successful HTTP response but missing accessToken or unexpected data structure:', responseData);
+        return {
+          success: false, // Treat as failure to obtain new token from body
+          message: 'Token refresh response missing accessToken in body or unexpected structure.',
+          error: 'Invalid data structure from server for token data.',
+          rawErrorResponse: responseText.substring(0, 500),
+        };
+      }
+    } catch (jsonParseError) {
+      console.error('[authService] RefreshToken JSON parsing failed even though status was ok:', jsonParseError);
+      return {
+        success: false,
+        message: 'Failed to parse successful server response for token refresh.',
+        error: (jsonParseError as Error).message,
+        rawErrorResponse: responseText.substring(0, 500),
+      };
+    }
+  } catch (error) {
+    console.error('[authService] RefreshToken network error or other issue:', error);
+    if (error instanceof Error) {
+      return { success: false, message: 'A network error occurred during token refresh.', error: error.message };
+    }
+    return { success: false, message: 'An unexpected network error occurred during token refresh.' };
+  }
+};

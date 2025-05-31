@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "mobile-fe",
-    "slug": "mobile-fe",
+    "name": "Treazure",
+    "slug": "Treazure",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/logo/Treazure.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -30,7 +30,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#F4E6FF"
         }
       ]
     ],

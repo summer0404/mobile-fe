@@ -15,7 +15,7 @@ const CategoryGroup: React.FC<CategoryGroupProps> = ({ groupName, items, onCateg
 
   return (
     <View className="mb-5">
-      <Text className="text-base font-semibold text-textDark/80 mb-3">{groupName}</Text>
+      <Text className="text-base font-psemibold text-black/80 mb-3">{groupName}</Text>
       <View className="flex-row flex-wrap -m-1.5">
         {items.map((item) => (
           <CategoryItem key={item.id} item={item} onPress={onCategorySelect} />

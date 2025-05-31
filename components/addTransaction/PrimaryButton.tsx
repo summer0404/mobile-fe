@@ -25,7 +25,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       onPress={onPress}
       disabled={disabled}
     >
-      <Text className={`font-semibold text-base ${disabled ? 'text-gray-600' : 'text-white'} ${textStyle as string}`}>
+      <Text className={`font-psemibold text-base ${disabled ? 'text-gray-600' : 'text-white'} ${textStyle as string}`}>
         {title}
       </Text>
     </TouchableOpacity>
