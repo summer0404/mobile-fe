@@ -98,7 +98,6 @@ const AddTransaction = () => {
     }
 
     const transactionData: CreateTransactionData = {
-      userId: currentUserId,
       name: transactionNameInput.trim(), // Use the new dedicated name state
       type: apiType,
       amount: parseFloat(amount.replace(/,/g, '')),

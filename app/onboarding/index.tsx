@@ -85,7 +85,7 @@ const Onboarding = () => {
                     }} // Chuyển hướng đến tabs sau khi hoàn thành
                     style={styles.ctaButton}
                 >
-                    <Text style={styles.ctaText}>Become master at budgeting right now!</Text>
+                    <Text style={styles.ctaText}>Become master at budgeting!</Text>
                 </TouchableOpacity>
             )}
         </View>

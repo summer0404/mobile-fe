@@ -131,7 +131,14 @@ export default function Debt() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={{ flexGrow: 1 }}
+      // Add RefreshControl if you want pull-to-refresh functionality
+      // refreshControl={
+      //   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      // }
+    >
       <View style={styles.header}>
         <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/home')}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.violet600} />
@@ -168,14 +175,22 @@ export default function Debt() {
         </TouchableOpacity>
       </View>
 
-      {isLoading ? (
-        <View style={styles.content}>
-          <ActivityIndicator size="large" color={theme.colors.violet600} />
+      <View style={styles.content}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/debt/addDebt')} // Navigate to add debt screen
+        >
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
+
+        {isLoading ? (
+          <ActivityIndicator size="large" color={theme.colors.violet600} style={{ marginTop: 50 }}/>
         ) : (
           <DebtList data={filteredDebts} />
         )}
       </View>
     </ScrollView>
+      
   );
 }
 
@@ -206,7 +221,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 60,
     borderTopRightRadius: 60,
     position: 'relative',
-    minHeight: 300, // Ensure content area has some height
+    minHeight: 300,
   },
   total: {
     backgroundColor: theme.colors.whiteText,
@@ -215,7 +230,7 @@ const styles = StyleSheet.create({
     width: '75%',
     height: 75,
     alignItems: 'center',
-    justifyContent: 'center', // Added for better text centering
+    justifyContent: 'center',
     marginTop: 10,
     marginLeft: 'auto',
     marginRight: 'auto',
@@ -226,36 +241,23 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     marginRight: 'auto',
     alignSelf: 'center',
-    // height: 130, // Height can be dynamic
     width: '75%',
-    marginVertical: 10, // Added vertical margin
+    marginVertical: 10,
   },
   lent: {
     backgroundColor: theme.colors.whiteText,
     padding: 14,
     borderRadius: 14,
-    width: "47.5%", // Ensure this adds up correctly with gap
-    // height: 100, // Height can be dynamic
-    minHeight: 100, // Set a min height
+    width: "47.5%",
+    minHeight: 100,
     alignItems: 'center',
-    justifyContent: 'center', // Added for better text centering
-    // marginTop: 10, // Removed, using marginVertical on parent
+    justifyContent: 'center',
   },
-  // borrowed style was identical to lent, can be removed if no specific differences
-  // borrowed: {
-  //   backgroundColor: theme.colors.whiteText,
-  //   padding: 14,
-  //   borderRadius: 14,
-  //   width: "47.5%",
-  //   height: 100,
-  //   alignItems: 'center',
-  //   marginTop: 10,
-  // },
   buttonText: {
     color: '#000',
     fontSize: 14,
     fontFamily: 'Poppins-Medium',
-    textAlign: 'center', // Ensure text is centered
+    textAlign: 'center',
   },
   balanceAmount: {
     color: '#000',
@@ -266,8 +268,8 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 15,
     fontFamily: 'Poppins-SemiBold',
-    lineHeight: 24, // Ensure this is appropriate
-    marginTop: 4, // Add some space
+    lineHeight: 24,
+    marginTop: 4,
   },
   addButton: {
     zIndex: 100,
@@ -275,16 +277,21 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    width: 30,
-    height: 30,
+    width: 40,
+    height: 40,
     position: 'absolute',
-    top: 30,
-    right: 40,
+    top: 20,
+    right: 30,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   addButtonText: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 28,
     lineHeight: 32,
+    fontWeight: 'bold',
   },
 });

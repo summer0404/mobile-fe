@@ -82,9 +82,9 @@ export default function DebtDetailScreen() {
                 <Ionicons name="notifications" size={24} color="#fff" />
             </View>
 
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.title}>{debt.name}</Text>
+            {/* Content */}
+            <ScrollView contentContainerStyle={styles.content}>
+                <Text style={styles.title}>{debt.name}</Text>
 
                 <View style={styles.card}>
                     <Ionicons name="cash-outline" size={36} color="#6A4EFF" style={styles.icon} />

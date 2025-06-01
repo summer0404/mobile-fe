@@ -19,6 +19,7 @@ export default function DebtList({ data }: { data: any[] }) {
   });
 
   const handlePress = (item: any) => {
+    
     router.push({ pathname: '/debt/[id]', params: { id: item.id.toString() } });
   };
 
