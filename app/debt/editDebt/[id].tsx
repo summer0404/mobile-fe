@@ -58,7 +58,7 @@ export default function EditDebt() {
         const data = await handleGetDebt(id);
         setForm({
           name: data.name || '',
-          type: data.type || '',
+          type: data.type as TransactionType,
           amount: data.amount?.toString() || '',
           debtorName: data.debtorName || '',
           detail: data.detail || '',
@@ -92,7 +92,7 @@ export default function EditDebt() {
           status: form.status as TransactionStatus,
         },
         () => router.back(),
-        (err) => console.error(err)
+        (err: any) => console.error(err)
       );
     } catch (err) {
       ToastAndroid.show('Error updating debt', ToastAndroid.SHORT);
@@ -104,7 +104,7 @@ export default function EditDebt() {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#6A4EFF" />
+        <ActivityIndicator size="large" color={theme.colors.violet600} />
       </View>
     );
   }
@@ -167,6 +167,9 @@ export default function EditDebt() {
                 value={formatDate(form.date)}
                 editable={false}
               />
+              <View style={{ position: 'absolute', top: 12, right: 10 }}>
+                <CalendarIcon width={24} height={24} />
+              </View>
             </TouchableOpacity>
             {showDebtDate && (
               <DateTimePicker
@@ -189,6 +192,9 @@ export default function EditDebt() {
                 value={formatDate(form.dueDate)}
                 editable={false}
               />
+              <View style={{ position: 'absolute', top: 12, right: 10 }}>
+                <CalendarIcon width={24} height={24} />
+              </View>
             </TouchableOpacity>
             {showDueDate && (
               <DateTimePicker
@@ -225,6 +231,7 @@ export default function EditDebt() {
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
           </TouchableOpacity>
         </View>
+        <View style={{ height: 20 }} />
       </View>
     </ScrollView>
   );

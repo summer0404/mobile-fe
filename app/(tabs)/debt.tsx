@@ -37,6 +37,7 @@ export default function Debt() {
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
+
       const fetchData = async () => {
         setIsLoading(true);
         try {
@@ -64,6 +65,7 @@ export default function Debt() {
           if (isActive) setIsLoading(false);
         }
       };
+
       fetchData();
       return () => {
         isActive = false;
@@ -96,8 +98,7 @@ export default function Debt() {
     filter === 'all' ? true : debt.type === filter
   );
 
-
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
 
     const fetchData = async () => {
@@ -129,7 +130,6 @@ export default function Debt() {
     fetchData();
   };
 
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1 }}>
       <View style={styles.header}>
@@ -137,7 +137,7 @@ export default function Debt() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.violet600} />
         </Pressable>
         <Text style={styles.headerTitle}>Debt</Text>
-        <Ionicons name="notifications" size={24} color="#fff" />
+        <Ionicons name="notifications" size={24} color={theme.colors.whiteText} />
       </View>
 
       <TouchableOpacity
@@ -153,11 +153,7 @@ export default function Debt() {
           style={[styles.lent, filter === 'lend' && { backgroundColor: theme.colors.purple300 }]}
           onPress={() => setFilter('lend')}
         >
-          <Image
-            source={require("../../assets/images/lent.png")}
-            style={{ width: 30, height: 30, }}
-            resizeMode="contain"
-          />
+          <Image source={require("../../assets/images/lent.png")} style={{ width: 30, height: 30 }} resizeMode="contain" />
           <Text style={styles.buttonText}>Lent</Text>
           <Text style={styles.amount}>{numeral(calculatedTotalLent).format('$0,0.00')}</Text>
         </TouchableOpacity>
@@ -166,25 +162,14 @@ export default function Debt() {
           style={[styles.lent, filter === 'borrow' && { backgroundColor: theme.colors.purple300 }]} // Assuming 'lent' style can be reused
           onPress={() => setFilter('borrow')}
         >
-          <Image
-            source={require("../../assets/images/borrowed.png")}
-            style={{ width: 30, height: 30, }}
-            resizeMode="contain"
-          />
+          <Image source={require("../../assets/images/borrowed.png")} style={{ width: 30, height: 30 }} resizeMode="contain" />
           <Text style={styles.buttonText}>Borrowed</Text>
           <Text style={styles.amount}>{numeral(calculatedTotalBorrowed).format('$0,0.00')}</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push('/debt/addDebt')}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-
-        {isLoading ? (
+      {isLoading ? (
+        <View style={styles.content}>
           <ActivityIndicator size="large" color={theme.colors.violet600} />
         ) : (
           <DebtList data={filteredDebts} />
@@ -195,17 +180,10 @@ export default function Debt() {
 }
 
 const styles = StyleSheet.create({
-  loading: {
-    backgroundColor: theme.colors.violet100,
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.violet600,
   },
-
   header: {
     flexDirection: 'row',
     backgroundColor: theme.colors.violet600,
@@ -215,7 +193,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   content: {
     flex: 1,
     padding: 20,

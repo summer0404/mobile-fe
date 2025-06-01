@@ -9,67 +9,68 @@ import { theme } from '@/utils/theme';
 import { handleGetDebt, handleDeleteDebt } from '../../controller/DebtController';
 
 export default function DebtDetailScreen() {
-    const { id } = useLocalSearchParams();
-    const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
 
-    const [debt, setDebt] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+  const [debt, setDebt] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-    // Fetch debt when screen is focused
-    useFocusEffect(
-        useCallback(() => {
-            let isActive = true;
-            (async () => {
-                try {
-                    const data = await handleGetDebt(id);
-                    if (isActive) setDebt(data);
-                } catch (e) {
-                    Alert.alert('Error', 'Failed to fetch debt');
-                } finally {
-                    if (isActive) setLoading(false);
-                }
-            })();
-            return () => { isActive = false };
-        }, [id])
+  // Fetch debt when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      (async () => {
+        try {
+          const data = await handleGetDebt(id);
+          if (isActive) setDebt(data);
+        } catch (e) {
+          Alert.alert('Error', 'Failed to fetch debt');
+        } finally {
+          if (isActive) setLoading(false);
+        }
+      })();
+      return () => {
+        isActive = false;
+      };
+    }, [id])
+  );
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Confirm Delete',
+      'Are you sure you want to delete this debt?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await handleDeleteDebt(
+              id,
+              () => router.back(),
+              () => Alert.alert('Failed', 'Could not delete debt')
+            );
+          },
+        },
+      ]
     );
+  };
 
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={theme.colors.violet600} />
+      </View>
+    );
+  }
 
-    const confirmDelete = () => {
-        Alert.alert(
-            'Confirm Delete',
-            'Are you sure you want to delete this debt?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        await handleDeleteDebt(
-                            id,
-                            () => router.back(),
-                            () => Alert.alert('Failed', 'Could not delete debt')
-                        );
-                    },
-                },
-            ]
-        );
-    };
-
-    if (loading) {
-        return (
-            <View style={styles.loading}>
-                <ActivityIndicator size="large" color="#6A4EFF" />
-            </View>
-        );
-    }
-
-    if (!debt) {
-        return (
-            <View style={styles.loading}>
-                <Text style={{ color: '#888' }}>No debt found.</Text>
-            </View>
-        );
-    }
+  if (!debt) {
+    return (
+      <View style={styles.loading}>
+        <Text style={{ color: '#888' }}>No debt found.</Text>
+      </View>
+    );
+  }
 
     return (
         <View style={styles.container}>
@@ -81,8 +82,9 @@ export default function DebtDetailScreen() {
                 <Ionicons name="notifications" size={24} color="#fff" />
             </View>
 
-            <ScrollView style={styles.content}>
-                <Text style={styles.title}>{debt.name}</Text>
+      {/* Content */}
+      <View style={styles.content}>
+        <Text style={styles.title}>{debt.name}</Text>
 
                 <View style={styles.card}>
                     <Ionicons name="cash-outline" size={36} color="#6A4EFF" style={styles.icon} />

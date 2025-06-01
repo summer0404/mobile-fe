@@ -1,3 +1,5 @@
+import { saveToAsyncStorage } from "@/utils/asyncStorage";
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_BE_URL;
 
 import { authenticatedFetch, SessionExpiredError } from '@/utils/apiClient';
@@ -71,7 +73,7 @@ export const getMe = async (): Promise<GetMeResponse> => {
         success: false,
         message: 'Failed to parse successful server response.',
         error: (jsonParseError as Error).message,
-        rawErrorResponse: responseText.substring(0,500)
+        rawErrorResponse: responseText.substring(0, 500)
       };
     }
 
@@ -131,7 +133,7 @@ export const logIn = async (credentials: LoginCredentials): Promise<LogInRespons
           success: false,
           message: errorData.message || `Login failed: ${response.status}`,
           error: errorData.error || errorData.message,
-          rawErrorResponse: responseText.substring(0,500)
+          rawErrorResponse: responseText.substring(0, 500)
         };
       } catch (e) {
         // If parsing errorData also fails, it's likely HTML or plain text
@@ -139,7 +141,7 @@ export const logIn = async (credentials: LoginCredentials): Promise<LogInRespons
           success: false,
           message: `Login failed: ${response.status}. Server returned non-JSON response.`,
           error: `Received non-JSON response. Status: ${response.status}`,
-          rawErrorResponse: responseText.substring(0,500)
+          rawErrorResponse: responseText.substring(0, 500)
         };
       }
     }
@@ -151,6 +153,8 @@ export const logIn = async (credentials: LoginCredentials): Promise<LogInRespons
       const responseData = JSON.parse(responseText);
       // Successful login typically means a session cookie is set by the server.
       // The response body might just contain a success message.
+      console.log(responseData)
+      await saveToAsyncStorage('userProfile', responseData?.data)
       return {
         success: true,
         message: responseData.message || "Login successful",
@@ -169,7 +173,7 @@ export const logIn = async (credentials: LoginCredentials): Promise<LogInRespons
         success: false,
         message: 'Failed to parse successful server response for login.',
         error: (jsonParseError as Error).message,
-        rawErrorResponse: responseText.substring(0,500)
+        rawErrorResponse: responseText.substring(0, 500)
       };
     }
 
@@ -206,7 +210,7 @@ export const updateUser = async (userId: number | string, userData: UpdateUserPr
 
   try {
     const response = await fetch(requestUrl, {
-      method: 'PATCH', 
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         // 'Accept': 'application/json',
@@ -226,14 +230,14 @@ export const updateUser = async (userId: number | string, userData: UpdateUserPr
           success: false,
           message: errorData.message || `Update failed: ${response.status}`,
           error: errorData.error || errorData.message,
-          rawErrorResponse: responseText.substring(0,500)
+          rawErrorResponse: responseText.substring(0, 500)
         };
       } catch (e) {
         return {
           success: false,
           message: `Update failed: ${response.status}. Server returned non-JSON response.`,
           error: `Received non-JSON response. Status: ${response.status}`,
-          rawErrorResponse: responseText.substring(0,500)
+          rawErrorResponse: responseText.substring(0, 500)
         };
       }
     }
@@ -253,7 +257,7 @@ export const updateUser = async (userId: number | string, userData: UpdateUserPr
     } catch (jsonParseError) {
       // Handle cases where response is OK but not JSON (e.g., 204 No Content)
       if (response.status === 204) { // 204 No Content is a success but has no body
-         console.log(`[authService] User ${userId} updated successfully (204 No Content).`);
+        console.log(`[authService] User ${userId} updated successfully (204 No Content).`);
         return { success: true, message: "User updated successfully (No Content)" };
       }
       if (responseText.trim() === '' || responseText.toLowerCase().includes('ok') || responseText.toLowerCase().includes('success')) {
@@ -265,7 +269,7 @@ export const updateUser = async (userId: number | string, userData: UpdateUserPr
         success: false,
         message: 'Failed to parse successful server response for user update.',
         error: (jsonParseError as Error).message,
-        rawErrorResponse: responseText.substring(0,500)
+        rawErrorResponse: responseText.substring(0, 500)
       };
     }
 
@@ -312,14 +316,14 @@ export const logOut = async (): Promise<LogOutResponse> => {
           success: false,
           message: errorData.message || `Logout failed: ${response.status}`,
           error: errorData.error || errorData.message,
-          rawErrorResponse: responseText.substring(0,500)
+          rawErrorResponse: responseText.substring(0, 500)
         };
       } catch (e) {
         return {
           success: false,
           message: `Logout failed: ${response.status}. Server returned non-JSON response.`,
           error: `Received non-JSON response. Status: ${response.status}`,
-          rawErrorResponse: responseText.substring(0,500)
+          rawErrorResponse: responseText.substring(0, 500)
         };
       }
     }
@@ -351,7 +355,7 @@ export const logOut = async (): Promise<LogOutResponse> => {
         success: false,
         message: 'Failed to parse successful server response for logout.',
         error: (jsonParseError as Error).message,
-        rawErrorResponse: responseText.substring(0,500)
+        rawErrorResponse: responseText.substring(0, 500)
       };
     }
 
@@ -365,7 +369,7 @@ export const logOut = async (): Promise<LogOutResponse> => {
 };
 
 export interface ChangePasswordData {
-  email: string; 
+  email: string;
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
@@ -404,14 +408,14 @@ export const changePassword = async (passwordData: ChangePasswordData): Promise<
           success: false,
           message: errorData.message || `Password change failed: ${response.status}`,
           error: errorData.error || errorData.message,
-          rawErrorResponse: responseText.substring(0,500)
+          rawErrorResponse: responseText.substring(0, 500)
         };
       } catch (e) {
         return {
           success: false,
           message: `Password change failed: ${response.status}. Server returned non-JSON response.`,
           error: `Received non-JSON response. Status: ${response.status}`,
-          rawErrorResponse: responseText.substring(0,500)
+          rawErrorResponse: responseText.substring(0, 500)
         };
       }
     }
@@ -439,7 +443,7 @@ export const changePassword = async (passwordData: ChangePasswordData): Promise<
         success: false,
         message: 'Failed to parse successful server response for password change.',
         error: (jsonParseError as Error).message,
-        rawErrorResponse: responseText.substring(0,500)
+        rawErrorResponse: responseText.substring(0, 500)
       };
     }
 
