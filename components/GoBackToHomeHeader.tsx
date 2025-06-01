@@ -10,10 +10,20 @@ interface GoBackToHomeHeaderProps {
 
 const GoBackToHomeHeader = ({ title }: GoBackToHomeHeaderProps) => {
     const router = useRouter();
+    const canGoBack = router.canGoBack();
+
+    const handleBackPress = () => {
+        if (canGoBack) {
+            router.back();
+        } else {
+            
+            router.replace('/home'); 
+        }
+    };
 
     return (
         <View className="flex-row justify-between items-center mb-6 mx-3 mt-3">
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity onPress={handleBackPress}>
                 <Ionicons name="arrow-back" size={28} color="white" />
             </TouchableOpacity>
             <Text className="text-lg font-pbold text-white">{title}</Text>

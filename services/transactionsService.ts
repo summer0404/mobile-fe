@@ -19,7 +19,6 @@ export type TransactionType =
 
 export interface Transaction {
   id: number | string;
-  userId: number;
   name: string;
   type: TransactionType;
   amount: number; // Keep as number, parsing "200000.00" to number happens in UI or mapper
@@ -30,7 +29,6 @@ export interface Transaction {
 }
 
 export interface CreateTransactionData {
-  userId: number;
   name: string;
   type: TransactionType; 
   amount: number;
@@ -150,7 +148,6 @@ export interface GetAllTransactionsParams {
   page?: number;
   limit?: number;
   id?: number;
-  userId?: number;
   name?: string;
   type?: TransactionType | string; // Allow the specific union type or a general string for flexibility if API allows other values
   amount?: number;

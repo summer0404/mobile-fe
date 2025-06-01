@@ -99,47 +99,44 @@ const AllTransactionsScreen = () => {
         setError(null);
 
         let response;
+        
+        // Define base parameters that might be common
+        const commonParams: Omit<GetAllTransactionsParams, 'type'> = {
+            // userId: currentUserId, // Assuming backend infers user from session/token
+            limit: 100, // Adjust as needed, or implement pagination controls
+            sort: 'date:desc',
+        };
 
         if (activeFilter === 'expense') {
-            console.log(`Fetching all expense transactions`);
-            response = await getAllExpenseTransactions(); // This API takes no params
+            console.log(`Fetching all expense transactions with params:`, commonParams);
+            // getAllExpenseTransactions now also accepts params and returns paginated response
+            response = await getAllExpenseTransactions(commonParams);
         } else {
-            const params: GetAllTransactionsParams = {
-                userId: currentUserId,
-                limit: 100, // You might want to adjust or remove limit if not paginating 'all' or 'income'
-                sort: 'date:desc',
-            };
+            const params: GetAllTransactionsParams = { ...commonParams };
             if (activeFilter === 'income') {
-                params.type = 'income';
+                params.type = 'income'; // Filter by income type
             }
+            // If activeFilter === 'all', no 'type' is added, fetching all types via getAllTransactions
             console.log(`Fetching transactions with params:`, params, `Active filter: ${activeFilter}`);
             response = await getAllTransactions(params);
         }
 
 
         if (response.success && response.data) {
-            if (activeFilter === 'expense') {
-                // response.data is Transaction[]
-                if (Array.isArray(response.data)) {
-                    setApiTransactions(response.data);
-                } else {
-                    console.warn("getAllExpenseTransactions response data is not an array:", response.data);
-                    setApiTransactions([]);
-                    setError("Received unexpected data format for expenses.");
-                }
+            // Both getAllTransactions and getAllExpenseTransactions now return PaginatedTransactionsResponse in response.data
+            const paginatedData = response.data as PaginatedTransactionsResponse;
+
+            if (paginatedData && paginatedData.items && Array.isArray(paginatedData.items)) {
+                setApiTransactions(paginatedData.items);
+                // Optionally, handle meta if needed for pagination UI later
+                // if (paginatedData.meta) {
+                //     setMeta(paginatedData.meta);
+                // }
             } else {
-                // response.data is PaginatedTransactionsResponse
-                const paginatedData = response.data as PaginatedTransactionsResponse;
-                if (paginatedData.items && Array.isArray(paginatedData.items)) {
-                    setApiTransactions(paginatedData.items);
-                    // if (paginatedData.meta) {
-                    //     setMeta(paginatedData.meta);
-                    // }
-                } else {
-                    console.warn("getAllTransactions response data.items is not an array or is missing:", paginatedData);
-                    setApiTransactions([]);
-                    setError("Received unexpected data format from server (items missing).");
-                }
+                const dataType = activeFilter === 'expense' ? 'expenses' : (activeFilter === 'income' ? 'income transactions' : 'transactions');
+                console.warn(`Response for ${dataType} is missing 'items' array or has unexpected structure:`, paginatedData);
+                setApiTransactions([]);
+                setError(`Received unexpected data format for ${dataType}.`);
             }
         } else {
             setError(response.message || response.error || "Failed to fetch transactions.");

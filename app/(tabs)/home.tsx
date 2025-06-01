@@ -63,7 +63,6 @@ const Home = () => {
     setTransactionsError(null);
 
     const params: GetAllTransactionsParams = {
-      userId: currentUserId,
       limit: 3, // Get the 3 most recent
       sort: 'date:desc', // Sort by date descending
     };
@@ -111,7 +110,6 @@ const Home = () => {
     try {
       // Fetch all income transactions from the start of this week
       const incomeParams: GetAllTransactionsParams = {
-        userId: currentUserId,
         type: 'income',
         limit: 10000,
         createFrom: mondayTimestamp.toString(),
@@ -134,7 +132,6 @@ const Home = () => {
 
       // Fetch all food expense transactions
       const foodParams: GetAllTransactionsParams = {
-        userId: currentUserId,
         type: 'food',
         limit: 10000,
       };

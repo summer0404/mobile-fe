@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
 import React, { useState, useCallback } from 'react';
 import { theme } from '../../utils/theme';
 import DebtList from '@/components/DebtList';

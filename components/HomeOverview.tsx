@@ -70,7 +70,7 @@ const HomeOverview = () => {
 
         try {
             const params: GetAllTransactionsParams = {
-                userId: currentUserId,
+                // userId: currentUserId,
                 createFrom: startDate.getTime().toString(),
                 createTo: endDate.getTime().toString(),
                 limit: 10000,

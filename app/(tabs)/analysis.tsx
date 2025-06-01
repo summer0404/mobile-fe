@@ -118,11 +118,12 @@ const Analysis = () => {
 
     try {
       const params: GetAllTransactionsParams = {
-        userId: currentUserId,
+        // userId: currentUserId,
         createFrom: startDate.getTime().toString(),
         createTo: endDate.getTime().toString(),
         limit: 10000, // Fetch a large number for the period
       };
+      
       const response = await getAllTransactions(params);
 
       if (!response.success) {
