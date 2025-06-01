@@ -1,206 +1,164 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Platform,
+    View, Text, Alert, StyleSheet, Pressable,
+    ActivityIndicator, TouchableOpacity
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
-import FormInput from '@/components/addTransaction/FormInput';
-import { changePassword, ChangePasswordData, getMe, UserProfile as ApiUserProfile } from '@/services/authService';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import AuthTextInput from '@/components/AuthTextInput';
+import { theme } from '@/utils/theme';
+import {
+    ChangePasswordFormData,
+    handleChangePassword,
+} from '@/controller/AuthController';
 
-const ChangePasswordScreen = () => {
-  const router = useRouter();
-  const [userEmail, setUserEmail] = useState<string | null>(null); // State for user's email
-  const [isLoadingEmail, setIsLoadingEmail] = useState(true); // State for loading email
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+import {
+    validatePassword,
+    validateConfirmPassword,
+} from '@/utils/validates/auth.validate.config';
 
-  useEffect(() => {
-    const fetchUserEmail = async () => {
-      setIsLoadingEmail(true);
-      const response = await getMe();
-      if (response.success && response.data?.email) {
-        setUserEmail(response.data.email);
-      } else {
-        setError("Could not retrieve user email. Please try again.");
-        Alert.alert("Error", "Could not retrieve your email to proceed with password change.");
-        // Optionally, navigate back or disable the form
-      }
-      setIsLoadingEmail(false);
-    };
-    fetchUserEmail();
-  }, []);
+export default function ChangePasswordScreen() {
+    const [form, setForm] = useState<ChangePasswordFormData>({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+    });
 
+    const [errors, setErrors] = useState<Partial<Record<keyof ChangePasswordFormData, string>>>({});
 
-  const validatePasswords = () => {
-    if (!currentPassword.trim()) {
-      return "Current password is required.";
-    }
-    if (!newPassword.trim()) {
-      return "New password is required.";
-    }
-    if (newPassword.length < 6) { // Example: minimum password length
-      return "New password must be at least 6 characters long.";
-    }
-    if (!confirmNewPassword.trim()) {
-      return "Please confirm your new password.";
-    }
-    if (newPassword !== confirmNewPassword) {
-      return "New passwords do not match.";
-    }
-    return null; // No validation errors
-  };
+    const [isLoading, setIsLoading] = useState(false);
 
-  const handleChangePassword = async () => {
-    setError(null);
-    const validationError = validatePasswords();
-    if (validationError) {
-      setError(validationError);
-      Alert.alert("Validation Error", validationError);
-      return;
-    }
-
-    if (!userEmail) {
-      setError("User email is not available. Cannot change password.");
-      Alert.alert("Error", "User email is not available. Please try again later.");
-      return;
-    }
-
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-
-    const passwordPayload: ChangePasswordData = {
-      email: userEmail,
-      currentPassword: currentPassword,
-      newPassword: newPassword,
-      confirmPassword: confirmNewPassword, // Backend expects this
+    const handleInputChange = (key: keyof ChangePasswordFormData, value: string) => {
+        setForm(prev => ({ ...prev, [key]: value }));
+        setErrors(prev => ({ ...prev, [key]: '' }));
     };
 
-    try {
-      console.log("Attempting to change password with payload:", passwordPayload);
-      const response = await changePassword(passwordPayload);
-      setIsSubmitting(false);
+    const handleSubmit = () => {
+        const newErrors = validateForm(form);
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
 
-      if (response.success) {
-        Alert.alert("Success", response.message || "Password changed successfully!");
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmNewPassword('');
-        router.back(); // Go back to settings or profile
-      } else {
-        const errorMessage = response.message || response.error || "Failed to change password.";
-        setError(errorMessage);
-        Alert.alert("Error", errorMessage + " Please try again.");
-      }
-    } catch (apiError) {
-      setIsSubmitting(false);
-      console.error("Change password API error:", apiError);
-      const message = (apiError instanceof Error) ? apiError.message : "An unexpected error occurred.";
-      setError(message);
-      Alert.alert("Error", message);
+        handleChangePassword(
+            form,
+            () => {
+                Alert.alert('Success', 'Change password successfully!', [
+                    { text: 'OK', onPress: () => router.replace('/home') },
+                ]);
+            },
+            () => {
+                Alert.alert('Change password Failed', 'An error occurred while Change password');
+            }
+        );
+    };
+
+    function validateForm(form: ChangePasswordFormData) {
+        const newErrors: Partial<Record<keyof ChangePasswordFormData, string>> = {};
+
+        const currentPasswordError = validatePassword(form.currentPassword);
+        if (currentPasswordError) newErrors.currentPassword = currentPasswordError;
+
+        const newPasswordError = validatePassword(form.newPassword);
+        if (newPasswordError) newErrors.newPassword = newPasswordError;
+
+        const confirmPasswordError = validateConfirmPassword(form.newPassword, form.confirmPassword);
+        if (confirmPasswordError) newErrors.confirmPassword = confirmPasswordError;
+
+        return newErrors;
     }
-  };
 
-  if (isLoadingEmail) {
     return (
-      <SafeAreaView className="flex-1 bg-primary justify-center items-center">
-        <ActivityIndicator size="large" color="#FFFFFF" />
-        <Text className="text-white mt-2">Loading user data...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView className="flex-1 bg-primary">
-      <StatusBar barStyle={Platform.OS === 'ios' ? 'dark-content': 'light-content'} backgroundColor="#1A1A2E" />
-      <GoBackToHomeHeader title='Change Password' />
-
-      <View className="flex-1 bg-primary-200 rounded-t-[70] pt-16">
-        <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: 24,
-            paddingTop: 20,
-            paddingBottom: 80,
-          }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text className="text-lg font-psemibold text-textDark mb-6 text-center">
-            Update Your Password
-          </Text>
-
-          {error && (
-            <View className="bg-red-100 p-3 rounded-lg mb-4">
-              <Text className="text-red-700 text-center">{error}</Text>
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <Pressable onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                </Pressable>
+                <Text style={styles.headerTitle}>Change Password</Text>
+                <Ionicons name="notifications" size={24} color="#fff" />
             </View>
-          )}
 
-          <FormInput
-            label="Current Password"
-            value={currentPassword}
-            onChangeText={setCurrentPassword}
-            placeholder="Enter your current password"
-            secureTextEntry={!showCurrentPassword}
-            inputWrapperStyle="bg-white/70"
-            containerStyle="mb-4"
-            rightIcon={showCurrentPassword ? "eye-off-outline" : "eye-outline"}
-            onRightIconPress={() => setShowCurrentPassword(!showCurrentPassword)}
-          />
+            <View style={styles.content}>
+                <AuthTextInput
+                    label="Current Password"
+                    value={form.currentPassword}
+                    onChangeText={(text) => handleInputChange('currentPassword', text)}
+                    isPassword
+                    error={errors.currentPassword}
+                />
+                <AuthTextInput
+                    label="New Password"
+                    value={form.newPassword}
+                    onChangeText={(text) => handleInputChange('newPassword', text)}
+                    isPassword
+                    error={errors.newPassword}
+                />
+                <AuthTextInput
+                    label="Confirm New Password"
+                    value={form.confirmPassword}
+                    onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                    isPassword
+                    error={errors.confirmPassword}
+                />
 
-          <FormInput
-            label="New Password"
-            value={newPassword}
-            onChangeText={setNewPassword}
-            placeholder="Enter your new password"
-            secureTextEntry={!showNewPassword}
-            inputWrapperStyle="bg-white/70"
-            containerStyle="mb-4"
-            rightIcon={showNewPassword ? "eye-off-outline" : "eye-outline"}
-            onRightIconPress={() => setShowNewPassword(!showNewPassword)}
-          />
+                <View style={styles.buttonWrapper}>
+                    <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+                        <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
 
-          <FormInput
-            label="Confirm New Password"
-            value={confirmNewPassword}
-            onChangeText={setConfirmNewPassword}
-            placeholder="Confirm your new password"
-            secureTextEntry={!showConfirmNewPassword}
-            inputWrapperStyle="bg-white/70"
-            containerStyle="mb-6"
-            rightIcon={showConfirmNewPassword ? "eye-off-outline" : "eye-outline"}
-            onRightIconPress={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
-          />
+                    <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                        {isLoading
+                            ? <ActivityIndicator color="#fff" />
+                            : <Text style={styles.buttonText}>Change</Text>}
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    );
+}
 
-          <TouchableOpacity
-            onPress={handleChangePassword}
-            disabled={isSubmitting || isLoadingEmail} // Disable if email is still loading
-            className={`py-4 rounded-full items-center justify-center shadow-md ${isSubmitting || isLoadingEmail ? 'bg-gray-400' : 'bg-primary'}`}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text className="text-white font-psemibold text-base">Change Password</Text>
-            )}
-          </TouchableOpacity>
-
-        </ScrollView>
-      </View>
-    </SafeAreaView>
-  );
-};
-
-export default ChangePasswordScreen;
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.violet600,
+    },
+    header: {
+        flexDirection: 'row',
+        padding: 30,
+        paddingBottom: 16,
+        paddingTop: 50,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: theme.colors.violet600,
+    },
+    headerTitle: {
+        color: '#fff',
+        fontSize: 20,
+        fontFamily: 'Poppins-SemiBold',
+    },
+    content: {
+        height: '100%',
+        padding: 30,
+        backgroundColor: theme.colors.violet100,
+        borderTopLeftRadius: 60,
+        borderTopRightRadius: 60,
+        gap: 20,
+    },
+    buttonWrapper: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: '5%',
+    },
+    button: {
+        backgroundColor: theme.colors.violet600,
+        padding: 15,
+        borderRadius: 30,
+        marginTop: 30,
+        alignItems: 'center',
+        minWidth: 100,
+    },
+    buttonText: {
+        color: '#fff',
+        fontWeight: '600',
+    },
+});

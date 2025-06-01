@@ -8,6 +8,7 @@ export async function apiRequest<T>(
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'include'
     };
 
     if (data) {
