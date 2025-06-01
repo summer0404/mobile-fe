@@ -36,13 +36,13 @@ export default function DebtList({ data }: { data: any[] }) {
                                 {item.type == "lend" ? (
                                     <Image
                                         source={require("../assets/images/lent.png")}
-                                        style={{ width: 30, height: 30, tintColor: theme.colors.whiteText }}
+                                        style={{ width: 25, height: 25, tintColor: theme.colors.whiteText }}
                                         resizeMode="contain"
                                     />
                                 ) : (
                                     <Image
                                         source={require("../assets/images/borrowed.png")}
-                                        style={{ width: 30, height: 30, tintColor: theme.colors.whiteText }}
+                                        style={{ width: 25, height: 25, tintColor: theme.colors.whiteText }}
                                         resizeMode="contain"
                                     />
                                 )}

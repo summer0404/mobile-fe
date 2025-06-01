@@ -1,6 +1,6 @@
-import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, Alert } from 'react-native'
+import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, Alert, ActivityIndicator } from 'react-native'
 import React, { useState, useEffect } from 'react'
-import { useNavigation, useRouter } from 'expo-router'; // Make sure useRouter is imported
+import { useNavigation, useRouter } from 'expo-router';
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader'
 import { ScrollView } from 'react-native-gesture-handler'
 import PrimaryButton from '@/components/addTransaction/PrimaryButton'
@@ -9,22 +9,27 @@ import CategorySelector from '@/components/addTransaction/CategorySelector'
 import DateField from '@/components/addTransaction/DateField'
 import TransactionTypeToggle from '@/components/addTransaction/TransactionTypeToggle'
 import CategoryModal from '@/components/addTransaction/CategoryModal'
-import { Category, CategoryGroupData, NavItem, TransactionTypeId } from '../../components/addTransaction/types';
-import categories from '@/constants/categories'; 
+import { Category, CategoryGroupData, NavItem, TransactionTypeId as LocalTransactionTypeId } from '../../components/addTransaction/types';
+import categories from '@/constants/categories';
 import numeral from 'numeral';
+import { createTransaction, CreateTransactionData, TransactionType as ApiTransactionType } from '@/services/transactionsService';
+import { getMe } from '@/services/authService';
 
 const AddTransaction = () => {
-  const router = useRouter(); // Initialize router
-  const [transactionType, setTransactionType] = useState<TransactionTypeId>('expense');
+  const router = useRouter();
+  const [transactionType, setTransactionType] = useState<LocalTransactionTypeId>('expense');
   const [date, setDate] = useState<Date>(new Date());
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [amount, setAmount] = useState<string>('');
-  const [message, setMessage] = useState<string>('');
+  const [transactionNameInput, setTransactionNameInput] = useState<string>(''); // New state for transaction name
+  const [message, setMessage] = useState<string>(''); // This will now be just for 'detail'
   const [isCategoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [isLoadingUserId, setIsLoadingUserId] = useState(true);
   const navigation = useNavigation();
 
-  // Listen for keyboard events to adjust UI accordingly
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
@@ -33,40 +38,98 @@ const AddTransaction = () => {
       setKeyboardVisible(false);
     });
 
+    const fetchCurrentUserId = async () => {
+      setIsLoadingUserId(true);
+      const response = await getMe();
+      if (response.success && response.data?.id) {
+        setCurrentUserId(response.data.id);
+      } else {
+        console.error("Failed to fetch user ID:", response.message || response.error);
+        Alert.alert("Error", "Could not fetch user information. Please try logging in again.");
+      }
+      setIsLoadingUserId(false);
+    };
+
+    fetchCurrentUserId();
+
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
   }, []);
 
+  const handleTransactionTypeChange = (newType: LocalTransactionTypeId) => {
+    setTransactionType(newType);
+    if (newType === 'income') {
+      setSelectedCategory(null);
+    }
+  };
 
-  const handleSave = () => {
-    // Your existing save logic (e.g., API call, local storage update)
-    console.log('Saved Data:', { transactionType, date, selectedCategory, amount, message });
-    
-    // Example: Add to dummyTransactions for now
-    // This is a placeholder. You should have a proper state management or API call here.
-    const newTransaction = {
-      id: String(Date.now()), // Simple unique ID
-      title: message.substring(0, 20) || selectedCategory?.name || 'Transaction', // Derive title
-      dateTime: date.toLocaleString(), // Format as needed
-      categoryDisplay: selectedCategory?.name || 'N/A',
-      amount: numeral(parseFloat(amount || "0")).format('0,0.00'), // Format amount string
-      amountRaw: transactionType === 'income' ? parseFloat(amount || "0") : -parseFloat(amount || "0"),
-      type: transactionType,
-      iconName: selectedCategory?.icon || 'help-circle-outline', // Default icon
-      dateObject: date,
-      detail: message,
+  const handleSave = async () => {
+    if (isSaving || isLoadingUserId) return;
+
+    if (!currentUserId) {
+      Alert.alert("Error", "User information is not available. Cannot save transaction.");
+      return;
+    }
+
+    // Validation for new name field
+    if (!transactionNameInput.trim()) {
+      Alert.alert("Validation Error", "Transaction name is required.");
+      return;
+    }
+    if (!amount || (transactionType !== 'income' && !selectedCategory)) {
+      Alert.alert("Validation Error", "Please fill in all required fields (Amount and Category for expenses).");
+      setIsSaving(false); // Ensure isSaving is reset if validation fails early
+      return;
+    }
+
+    setIsSaving(true);
+
+    let apiType: ApiTransactionType;
+    if (transactionType === 'income') {
+      apiType = 'income';
+    } else if (selectedCategory?.id) { // Use selectedCategory.type for expense type
+      apiType = selectedCategory.id as ApiTransactionType;
+    } else {
+      Alert.alert("Error", "Category type is missing for expense.");
+      setIsSaving(false);
+      return;
+    }
+
+    const transactionData: CreateTransactionData = {
+      userId: currentUserId,
+      name: transactionNameInput.trim(), // Use the new dedicated name state
+      type: apiType,
+      amount: parseFloat(amount.replace(/,/g, '')),
+      detail: message.trim() || null, // 'message' state is now purely for detail
+      date: date.toISOString(),
     };
-    // dummyTransactions.unshift(newTransaction); // Add to the beginning of the list (if dummyTransactions is mutable and accessible here)
 
+    console.log('Attempting to save transaction with data:', transactionData);
 
-    Keyboard.dismiss(); // Hide keyboard after saving
-    Alert.alert("Success", "Transaction saved successfully!"); // Give user feedback
+    try {
+      const response = await createTransaction(transactionData);
+      setIsSaving(false);
 
-    // Navigate to the transaction list screen
-    router.replace('/transaction'); // Or router.push('/transaction');
-                                  // consider router.back(); if it makes more sense in your flow
+      if (response.success && response.data) {
+        Keyboard.dismiss();
+        Alert.alert("Success", response.message || "Transaction saved successfully!");
+        setAmount('');
+        setTransactionNameInput(''); // Reset new name field
+        setMessage('');
+        setSelectedCategory(null);
+        setDate(new Date());
+        setTransactionType('expense');
+        router.replace('/transaction');
+      } else {
+        Alert.alert("Error Saving Transaction", response.message || response.error || "Could not save transaction. Please try again.");
+      }
+    } catch (error) {
+      setIsSaving(false);
+      console.error("Save transaction error:", error);
+      Alert.alert("Error", "An unexpected error occurred while saving the transaction.");
+    }
   };
 
   const handleCategorySelectFromModal = (category: Category) => {
@@ -74,15 +137,21 @@ const AddTransaction = () => {
     setCategoryModalVisible(false);
   };
 
+  if (isLoadingUserId) {
+    return (
+      <SafeAreaView className="flex-1 bg-primary justify-center items-center">
+        <ActivityIndicator size="large" color="#FFFFFF" />
+        <Text className="text-white mt-2">Loading user data...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className='flex-1 bg-primary'>
       <StatusBar />
-
-      {/* Fixed header section */}
       <View className="p-6">
         <GoBackToHomeHeader title='Add Transaction' />
       </View>
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -95,12 +164,12 @@ const AddTransaction = () => {
               paddingTop: 24, paddingBottom: keyboardVisible ? 280 : 120
             }}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled" // Allow tapping inputs when keyboard is visible
+            keyboardShouldPersistTaps="handled"
           >
             <View className="p-6 space-y-5">
               <TransactionTypeToggle
                 transactionType={transactionType}
-                onTypeChange={setTransactionType}
+                onTypeChange={handleTransactionTypeChange}
               />
               <DateField
                 label="Date"
@@ -108,51 +177,65 @@ const AddTransaction = () => {
                 onDateChange={setDate}
                 required
               />
-              <CategorySelector
-                label="Category"
-                selectedCategory={selectedCategory}
-                onOpenModal={() => setCategoryModalVisible(true)}
-                suggestedCategories={categories.suggestedCategoriesData} // Access the correct property
-                onSuggestedSelect={setSelectedCategory}
-                required
+              {transactionType !== 'income' && (
+                <CategorySelector
+                  label="Category"
+                  selectedCategory={selectedCategory}
+                  onOpenModal={() => setCategoryModalVisible(true)}
+                  suggestedCategories={categories.suggestedCategoriesData}
+                  onSuggestedSelect={setSelectedCategory}
+                  required
+                />
+              )}
+              {/* New FormInput for Transaction Name */}
+              <FormInput
+                label="Transaction Name"
+                value={transactionNameInput}
+                onChangeText={setTransactionNameInput}
+                placeholder="e.g., April Salary, Groceries"
+                required // Make it required
               />
-
               <FormInput
                 label="Amount"
-                value={amount} // Pass the raw numeric string
-                onChangeText={setAmount} // setAmount will receive the raw numeric string
-                placeholder="0" // Updated placeholder
-                formatAsCurrency={true} // Enable formatting
-                currencySymbol="$" // Optional: if you want to show a currency symbol
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="0"
+                formatAsCurrency={true}
+                currencySymbol="$"
                 required
               />
               <FormInput
-                label="Enter Message"
+                label="Note (Optional)" // Changed label to indicate it's optional
                 value={message}
                 onChangeText={setMessage}
-                placeholder="Enter a message or note..."
+                placeholder="Enter any additional details..."
                 multiline
-                numberOfLines={4} // This acts as a hint, especially for Android's initial render
-                inputWrapperStyle="h-28 items-start" // Pass the height here, items-start for alignment
-              // textInputStyle="h-full" // Optionally, explicitly tell TextInput to take full height if needed
-              // but className="... h-full" on TextInput itself should work.
+                numberOfLines={3} // Reduced lines as it's now just for notes
+                inputWrapperStyle="h-24 items-start" // Adjusted height
               />
-
               <PrimaryButton
-                title="Save"
+                title={isSaving ? "Saving..." : "Save"}
                 onPress={handleSave}
-                disabled={!selectedCategory || !amount}
-                style="mt-4" // NativeWind specific, keep as string
+                disabled={
+                  isLoadingUserId ||
+                  isSaving ||
+                  !transactionNameInput.trim() || // Add validation for new name field
+                  (transactionType !== 'income' && !selectedCategory) ||
+                  !amount ||
+                  !currentUserId
+                }
+                style="mt-4"
               />
             </View>
           </ScrollView>
-
-          <CategoryModal
-            isVisible={isCategoryModalVisible}
-            onClose={() => setCategoryModalVisible(false)}
-            allCategories={categories.allCategoriesData} // Access the correct property
-            onSelectCategory={handleCategorySelectFromModal}
-          />
+          {transactionType !== 'income' && (
+            <CategoryModal
+              isVisible={isCategoryModalVisible}
+              onClose={() => setCategoryModalVisible(false)}
+              allCategories={categories.allCategoriesData}
+              onSelectCategory={handleCategorySelectFromModal}
+            />
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Pressable, RefreshControl, Image, ActivityIndicator } from 'react-native';
 import React, { useState, useCallback } from 'react';
 import { theme } from '../../utils/theme';
 import DebtList from '@/components/DebtList';
@@ -10,27 +10,31 @@ export default function Debt() {
   const [debts, setDebts] = useState<any[]>([]);
   const [filter, setFilter] = useState<'all' | 'lend' | 'borrow'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Load danh sách nợ khi màn hình được focus
+  // Fetch data on screen focus
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
+
       const fetchData = async () => {
         setIsLoading(true);
         try {
           const data = await handleFetchDebts();
           if (isActive) {
-            const transformed = data.items.map((item: any) => ({
-              id: item.id,
-              debtorName: item.debtorName,
-              dueDate: new Date(item.dueDate),
-              status: item.status,
-              debt_date: new Date(item.transaction.date),
-              type: ['lend', 'borrow'].includes(item.transaction.type) ? item.transaction.type : 'lend',
-              name: item.transaction.name,
-              amount: parseFloat(item.transaction.amount),
-              detail: item.transaction.detail,
-            }));
+            const transformed = Array.isArray(data?.items)
+              ? data.items.map((item: any) => ({
+                  id: item.id,
+                  debtorName: item.debtorName,
+                  dueDate: new Date(item.dueDate),
+                  status: item.status,
+                  debt_date: new Date(item.transaction.date),
+                  type: ['lend', 'borrow'].includes(item.transaction.type) ? item.transaction.type : 'lend',
+                  name: item.transaction.name,
+                  amount: parseFloat(item.transaction.amount),
+                  detail: item.transaction.detail,
+                }))
+              : [];
             setDebts(transformed);
           }
         } catch (error) {
@@ -39,6 +43,7 @@ export default function Debt() {
           if (isActive) setIsLoading(false);
         }
       };
+
       fetchData();
       return () => {
         isActive = false;
@@ -50,14 +55,45 @@ export default function Debt() {
     filter === 'all' ? true : debt.type === filter
   );
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const data = await handleFetchDebts();
+      const transformed = Array.isArray(data?.items)
+        ? data.items.map((item: any) => ({
+            id: item.id,
+            debtorName: item.debtorName,
+            dueDate: new Date(item.dueDate),
+            status: item.status,
+            debt_date: new Date(item.transaction.date),
+            type: ['lend', 'borrow'].includes(item.transaction.type) ? item.transaction.type : 'lend',
+            name: item.transaction.name,
+            amount: parseFloat(item.transaction.amount),
+            detail: item.transaction.detail,
+          }))
+        : [];
+      setDebts(transformed);
+    } catch (error) {
+      console.error('Failed to refresh debts:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ flexGrow: 1 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={styles.header}>
-        <Pressable>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.violet600} />
+        <Pressable onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.whiteText} />
         </Pressable>
         <Text style={styles.headerTitle}>Debt</Text>
-        <Ionicons name="notifications" size={24} color="#fff" />
+        <Ionicons name="notifications" size={24} color={theme.colors.whiteText} />
       </View>
 
       <TouchableOpacity
@@ -73,74 +109,48 @@ export default function Debt() {
           style={[styles.lent, filter === 'lend' && { backgroundColor: theme.colors.purple300 }]}
           onPress={() => setFilter('lend')}
         >
-          <Image
-            source={require("../../assets/images/lent.png")}
-            style={{ width: 30, height: 30, }}
-            resizeMode="contain"
-          />
+          <Image source={require("../../assets/images/lent.png")} style={{ width: 30, height: 30 }} resizeMode="contain" />
           <Text style={styles.buttonText}>Lent</Text>
           <Text style={styles.amount}>$4,120.00</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[
-            styles.borrowed,
-            filter === 'borrow' && { backgroundColor: theme.colors.purple300 },
-          ]}
+          style={[styles.borrowed, filter === 'borrow' && { backgroundColor: theme.colors.purple300 }]}
           onPress={() => setFilter('borrow')}
         >
-          <Image
-            source={require("../../assets/images/borrowed.png")}
-            style={{ width: 30, height: 30, }}
-            resizeMode="contain"
-          />
+          <Image source={require("../../assets/images/borrowed.png")} style={{ width: 30, height: 30 }} resizeMode="contain" />
           <Text style={styles.buttonText}>Borrowed</Text>
           <Text style={styles.amount}>$1,187.40</Text>
         </TouchableOpacity>
       </View>
 
-      {
-        isLoading ? (
-          <View style={styles.content}>
-            <ActivityIndicator size="large" color={theme.colors.violet600} />
-          </View>
-        ) : (
-          <View style={styles.content}>
-            <TouchableOpacity
-              style={styles.addButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              onPress={() => router.push('/debt/addDebt')}
-            >
-              <Image
-                source={require('../../assets/images/addButton.png')}
-                style={{ width: 30, height: 30, }}
-                resizeMode="contain"
-              ></Image>
-              {/* <Text style={styles.addButtonText}>+</Text> */}
-            </TouchableOpacity>
+      {isLoading ? (
+        <View style={styles.content}>
+          <ActivityIndicator size="large" color={theme.colors.violet600} />
+        </View>
+      ) : (
+        <View style={styles.content}>
+          <TouchableOpacity
+            style={styles.addButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            onPress={() => router.push('/debt/addDebt')}
+          >
+            <Image source={require('../../assets/images/addButton.png')} style={{ width: 30, height: 30 }} resizeMode="contain" />
+          </TouchableOpacity>
 
-            <DebtList data={filteredDebts} />
-            <View style={{ height: 30 }} ></View>
-          </View>
-
-        )
-      }
-    </ScrollView >
+          <DebtList data={filteredDebts} />
+          <View style={{ height: 30 }} />
+        </View>
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  loading: {
-    backgroundColor: theme.colors.violet100,
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.violet600,
   },
-
   header: {
     flexDirection: 'row',
     backgroundColor: theme.colors.violet600,
@@ -150,7 +160,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   content: {
     flex: 1,
     padding: 20,
@@ -160,19 +174,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 60,
     position: 'relative',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 16,
-    marginTop: 16,
-    color: theme.colors.whiteText,
-  },
-  // headerTitle: {
-  //   color: '#fff',
-  //   fontSize: 20,
-  //   fontFamily: 'Poppins-SemiBold',
-  // },
   total: {
     backgroundColor: theme.colors.whiteText,
     padding: 10,

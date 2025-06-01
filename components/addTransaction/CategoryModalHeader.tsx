@@ -23,13 +23,13 @@ const CategoryModalHeader: React.FC<CategoryModalHeaderProps> = ({
         value={searchQuery}
         onChangeText={onSearchChange}
       />
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={onCreateNewPress}
         className="bg-primary/10 px-4 py-3 rounded-lg flex-row items-center"
       >
         <MaterialCommunityIcons name="plus" size={20} color="rgb(106, 13, 173)" />
         <Text className="text-primary font-medium ml-1 text-sm">Create new</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };

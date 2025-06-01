@@ -87,7 +87,7 @@ export default function DebtDetailScreen() {
                             <>
                                 <Image
                                     source={require("../../assets/images/lent.png")}
-                                    style={{ width: 50, height: 50, }}
+                                    style={{ width: 50, height: 50, tintColor: theme.colors.whiteText }}
                                     resizeMode="contain"
                                 />
                                 <Text style={styles.textType}>Lent</Text></>
@@ -95,14 +95,14 @@ export default function DebtDetailScreen() {
                             <>
                                 <Image
                                     source={require("../../assets/images/borrowed.png")}
-                                    style={{ width: 50, height: 50, }}
+                                    style={{ width: 50, height: 50, tintColor: theme.colors.whiteText }}
                                     resizeMode="contain"
                                 />
                                 <Text style={styles.textType}>Borrowed</Text>
                             </>
                         )}
                     </View>
-                    <View style={{ flexDirection: 'column', gap: 20 }}>
+                    <View style={{ flexDirection: 'column', gap: 20, width: '35%' }}>
                         <View>
                             <Text style={styles.titleAmount}>Amount</Text>
                             <Text style={styles.amount}>${debt.amount.toFixed(2)}</Text>
@@ -195,13 +195,15 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         alignItems: 'center',
         justifyContent: 'center',
-        width: '55%',
-        height: 150,
+        width: '52%',
+        aspectRatio: 1,
+        marginRight: -40,
     },
     textType: {
         marginTop: 10,
         fontFamily: 'Poppins-Medium',
         fontSize: 18,
+        color: theme.colors.whiteText,
     },
     titleAmount: {
         fontSize: 16,

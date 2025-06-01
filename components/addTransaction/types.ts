@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { TransactionType as ApiUITransactionType } from '@/services/transactionsService';
 
 // src/types.ts (or similar path)
 export interface Category {
@@ -38,8 +39,9 @@ export interface TransactionItemData {
   categoryDisplay: string; 
   amount: string; 
   amountRaw: number; 
-  type: 'income' | 'expense';
+  type: 'income' | 'expense'; // This is the simplified UI type
   iconName: React.ComponentProps<typeof MaterialCommunityIcons>['name']; 
   dateObject: Date;  // Actual Date object for sorting/grouping
   detail?: string;
+  originalApiType: ApiUITransactionType; // Add this line
 }

@@ -30,4 +30,41 @@ module.exports = {
     },
   },
   plugins: [],
+  safelist: [
+    // Background colors from categories.ts
+    'bg-orange-100',
+    'bg-green-100',
+    'bg-blue-100',
+    'bg-red-100',
+    'bg-cyan-100',
+    'bg-pink-100',
+    'bg-purple-100',
+    'bg-rose-100',
+    'bg-teal-100',
+    'bg-indigo-100',
+    'bg-amber-100',
+    'bg-gray-100',
+
+    // Icon colors (text colors) from categories.ts
+    'text-orange-500',
+    'text-green-500',
+    'text-blue-500',
+    'text-red-500',
+    'text-cyan-500',
+    'text-pink-500',
+    'text-purple-500',
+    'text-rose-500',
+    'text-teal-500',
+    'text-indigo-500',
+    'text-amber-500',
+    'text-gray-500',
+
+    // You can also use patterns if you have many and they follow a consistent structure:
+    // {
+    //   pattern: /bg-(orange|green|blue|red|cyan|pink|purple|rose|teal|indigo|amber|gray)-(100)/,
+    // },
+    // {
+    //   pattern: /text-(orange|green|blue|red|cyan|pink|purple|rose|teal|indigo|amber|gray)-(500)/,
+    // },
+  ],
 };
