@@ -2,10 +2,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { View, Text } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import Svg, { Path } from 'react-native-svg';
 
 interface CircularProgressBarProps {
-    percentage: number;
+    percentage: number; 
 }
 
 const CircularProgressBar: React.FC<CircularProgressBarProps> = ({ percentage }) => {
@@ -14,18 +13,19 @@ const CircularProgressBar: React.FC<CircularProgressBarProps> = ({ percentage })
             <AnimatedCircularProgress
                 size={80}
                 width={5}
-                fill={percentage}
-                tintColor="#00BFFF" // Blue color for the progress ring
+                fill={percentage} // Percentage of debt paid
+                tintColor="#00BFFF" // Blue color for the progress ring (can be changed)
                 backgroundColor="#FFFFFF" // White background for the ring
                 rotation={0}
                 lineCap="round"
             >
                 {() => (
-                    <MaterialCommunityIcons name="car-outline" size={40} color="white" />
+                    <MaterialCommunityIcons name="cash-minus" size={40} color="white" />
                 )}
             </AnimatedCircularProgress>
-            <Text className="text-white font-psemibold text-center">Savings</Text>
-            <Text className="text-white text-xs text-center font-pregular">On Goals</Text>
+            {/* Changed text to reflect debt progress */}
+            <Text className="text-white font-psemibold text-center mt-1">Debt Paid</Text>
+            <Text className="text-white text-xs text-center font-pregular">{percentage}% Cleared</Text>
         </View>
     );
 };

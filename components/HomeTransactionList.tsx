@@ -4,13 +4,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type Transaction = {
   id: string | number;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; // Correct type for icon name
-  iconColor: string; // Tailwind class for icon background
-  iconTextColor?: string; // Tailwind class for icon color itself (to be applied to Text wrapper)
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; 
+  iconColor: string; 
+  iconTextColor?: string; 
   title: string;
   time: string;
-  category: string; // This field remains in the type, but won't be displayed
-  type: string; // 'income' or 'expense'
+  category: string; 
+  type: string; 
   amount: number | string;
 };
 
@@ -39,7 +39,7 @@ const HomeTransactionList: React.FC<HomeTransactionListProps> = ({ transactions 
             <Text className="text-xs text-blue-600">{item.time}</Text>
           </View>
 
-          {/* Separator (This one is now between Title/Time and Amount) */}
+          {/* Separator */}
           <View className="w-px h-8 bg-slate-300 mx-3" />
           
           {/* Amount Section - Controlled Width */}

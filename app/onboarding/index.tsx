@@ -21,7 +21,7 @@ const slides = [
         id: "1",
         title: "Quick analysis of all expenses",
         description:
-            "All expenses by cards are reflected automatically in the application, and the analytics system helps to control them.",
+            "All your expenses are reflected in the application, and the analytics system helps you control them.",
         image: require("../../assets/images/figure.png"),
     },
     {
@@ -85,7 +85,7 @@ const Onboarding = () => {
                     }} // Chuyển hướng đến tabs sau khi hoàn thành
                     style={styles.ctaButton}
                 >
-                    <Text style={styles.ctaText}>Become a billionaire right now!</Text>
+                    <Text style={styles.ctaText}>Become master at budgeting right now!</Text>
                 </TouchableOpacity>
             )}
         </View>

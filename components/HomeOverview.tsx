@@ -152,9 +152,8 @@ const HomeOverview = () => {
             <View className="flex-row justify-around items-center my-4">
                 <View className="items-center">
                     <View className="flex-row items-center">
-                        {/* Changed icon for Total Balance */}
-                        <MaterialCommunityIcons name="scale-balance" size={24} color="white" />
-                        <Text className="text-xs text-white ml-1 font-pregular">Total Balance</Text>
+                        <MaterialCommunityIcons name="arrow-top-right-bold-box-outline" size={24} color="white" />
+                        <Text className="text-xs text-white ml-1 font-pregular">Total Income</Text>
                     </View>
                     {isLoadingData ? (
                         <ActivityIndicator size="small" color="white" className="mt-1" />

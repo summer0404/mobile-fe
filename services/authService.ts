@@ -1,5 +1,7 @@
 const API_BASE_URL = process.env.EXPO_PUBLIC_BE_URL;
 
+import { authenticatedFetch, SessionExpiredError } from '@/utils/apiClient';
+
 export interface UserProfile {
   id: number;
   firstName: string;
@@ -16,31 +18,46 @@ interface GetMeResponse {
   error?: string;
   rawErrorResponse?: string;
 }
+
 console.log("URL: ", API_BASE_URL);
 export const getMe = async (): Promise<GetMeResponse> => {
   const requestUrl = `${API_BASE_URL}/auth/me`;
-  // console.log('[authService] Attempting to fetch user profile from:', requestUrl);
 
   try {
-    const response = await fetch(requestUrl, {
+    // Use the authenticatedFetch wrapper
+    const response = await authenticatedFetch(requestUrl, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
+      // credentials: 'include' is now handled by authenticatedFetch by default
     });
 
-    const responseText = await response.text(); // Get raw text first
+    const responseText = await response.text(); 
 
-  
     if (!response.ok) {
-      console.error(`[authService] API failed with status ${response.status}.`);
+      console.error(`[authService] getMe API failed with status ${response.status}.`);
+      // The authenticatedFetch already handles the specific 401 "Session expired" case.
+      // This block will handle other non-ok responses.
+      try {
+        const errorData = JSON.parse(responseText);
+        return {
+          success: false,
+          message: errorData.message || `API request failed: ${response.status}`,
+          error: errorData.error || errorData.message,
+          rawErrorResponse: responseText.substring(0, 500),
+        };
+      } catch (e) {
+        return {
+          success: false,
+          message: `API request failed: ${response.status}. Server returned non-JSON response.`,
+          error: `Received non-JSON response. Status: ${response.status}`,
+          rawErrorResponse: responseText.substring(0, 500),
+        };
+      }
     }
 
     try {
       const responseData = JSON.parse(responseText);
-      if (!responseData.data) { // Check if the expected 'data' field exists
-        console.error('[authService] Successful response but missing "data" field in JSON:', responseData);
+      if (!responseData.data) {
+        console.error('[authService] getMe successful response but missing "data" field in JSON:', responseData);
         return { success: false, message: 'Successful response but missing "data" field.', error: 'Invalid data structure from server.'};
       }
       return {
@@ -49,7 +66,7 @@ export const getMe = async (): Promise<GetMeResponse> => {
         message: responseData.message
       };
     } catch (jsonParseError) {
-      console.error('[authService] JSON parsing failed even though status was ok:', jsonParseError);
+      console.error('[authService] getMe JSON parsing failed even though status was ok:', jsonParseError);
       return {
         success: false,
         message: 'Failed to parse successful server response.',
@@ -59,7 +76,14 @@ export const getMe = async (): Promise<GetMeResponse> => {
     }
 
   } catch (error) {
-    console.error('[authService] Network error or other issue:', error);
+    if (error instanceof SessionExpiredError) {
+      // The redirect is already handled by authenticatedFetch.
+      // Return a response indicating failure so the UI doesn't try to process non-existent data.
+      console.log('[authService] getMe caught SessionExpiredError, redirect initiated.');
+      return { success: false, message: error.message, error: error.name };
+    }
+    // Handle other network errors or issues not caught by the above
+    console.error('[authService] getMe network error or other issue:', error);
     if (error instanceof Error) {
       return { success: false, message: 'A network error occurred.', error: error.message };
     }
@@ -69,13 +93,11 @@ export const getMe = async (): Promise<GetMeResponse> => {
 
 export interface LoginCredentials {
   email: string;
-  password?: string; // Password might be optional if using social login, adjust as needed
-  // Add other fields if your login endpoint requires them (e.g., rememberMe)
+  password?: string;
 }
 
 interface LogInResponse {
   success: boolean;
-  // data?: null; // Typically login doesn't return user data directly, session/cookie is set
   message?: string;
   error?: string;
   rawErrorResponse?: string;
@@ -165,12 +187,10 @@ export const logIn = async (credentials: LoginCredentials): Promise<LogInRespons
 export interface UpdateUserProfileData {
   firstName?: string;
   lastName?: string;
-  email?: string; // Make sure your backend allows email updates and handles verification if needed
+  email?: string; 
   target?: string;
-  password?: string; // For changing password, often a separate endpoint or specific handling
 }
 
-// Interface for the response from the update user endpoint
 interface UpdateUserResponse {
   success: boolean;
   data?: UserProfile; // API might return the updated user profile

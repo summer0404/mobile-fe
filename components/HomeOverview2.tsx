@@ -6,14 +6,14 @@ import CircularProgressBar from './CircularProgress'
 type HomeOverview2Props = {
   revenue: number;
   food: number;
+  debtPercentage: number;
 };
 
-const HomeOverview2 = ({ revenue, food }: HomeOverview2Props) => {
+const HomeOverview2 = ({ revenue, food, debtPercentage }: HomeOverview2Props) => {
   return (
     <View className="bg-primary p-5 rounded-3xl flex-row items-center shadow-lg">
             <View className="flex-1 items-center pr-4 border-r border-white">
-                <CircularProgressBar percentage={30} />
-              
+                <CircularProgressBar percentage={debtPercentage} />
             </View>
             <View className="flex-1 pl-4 space-y-4">
               <View>

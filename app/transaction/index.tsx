@@ -98,42 +98,26 @@ const AllTransactionsScreen = () => {
         setIsLoading(true);
         setError(null);
 
-        let response;
-        
-        // Define base parameters that might be common
-        const commonParams: Omit<GetAllTransactionsParams, 'type'> = {
+        // Always fetch all (non-debt) transactions for the purpose of totals and base list
+        const params: GetAllTransactionsParams = {
             // userId: currentUserId, // Assuming backend infers user from session/token
             limit: 100, // Adjust as needed, or implement pagination controls
             sort: 'date:desc',
+            // No 'type' filter here, to get all relevant transactions for card totals
+            // 'borrow' and 'lend' will be filtered out client-side in `uiTransactions`
         };
-
-        if (activeFilter === 'expense') {
-            console.log(`Fetching all expense transactions with params:`, commonParams);
-            // getAllExpenseTransactions now also accepts params and returns paginated response
-            response = await getAllExpenseTransactions(commonParams);
-        } else {
-            const params: GetAllTransactionsParams = { ...commonParams };
-            if (activeFilter === 'income') {
-                params.type = 'income'; // Filter by income type
-            }
-            // If activeFilter === 'all', no 'type' is added, fetching all types via getAllTransactions
-            console.log(`Fetching transactions with params:`, params, `Active filter: ${activeFilter}`);
-            response = await getAllTransactions(params);
-        }
+        console.log(`Fetching ALL transactions for totals and list base with params:`, params);
+        // Always use getAllTransactions without a specific type filter for the base dataset
+        const response = await getAllTransactions(params);
 
 
         if (response.success && response.data) {
-            // Both getAllTransactions and getAllExpenseTransactions now return PaginatedTransactionsResponse in response.data
             const paginatedData = response.data as PaginatedTransactionsResponse;
 
             if (paginatedData && paginatedData.items && Array.isArray(paginatedData.items)) {
                 setApiTransactions(paginatedData.items);
-                // Optionally, handle meta if needed for pagination UI later
-                // if (paginatedData.meta) {
-                //     setMeta(paginatedData.meta);
-                // }
             } else {
-                const dataType = activeFilter === 'expense' ? 'expenses' : (activeFilter === 'income' ? 'income transactions' : 'transactions');
+                const dataType = 'transactions'; // Generic term as we are fetching all
                 console.warn(`Response for ${dataType} is missing 'items' array or has unexpected structure:`, paginatedData);
                 setApiTransactions([]);
                 setError(`Received unexpected data format for ${dataType}.`);
@@ -143,7 +127,7 @@ const AllTransactionsScreen = () => {
             setApiTransactions([]);
         }
         setIsLoading(false);
-    }, [currentUserId, activeFilter]);
+    }, [currentUserId]); // Removed activeFilter from dependencies, as it no longer affects the fetch query
 
     useFocusEffect(
         useCallback(() => {
@@ -161,36 +145,47 @@ const AllTransactionsScreen = () => {
             );
             return [];
         }
-        return apiTransactions.map(mapApiTransactionToUi);
+        // Filter out 'borrow' and 'lend' types before mapping
+        // This uiTransactions is the complete set for card totals
+        return apiTransactions
+            .filter(transaction => transaction.type !== 'borrow' && transaction.type !== 'lend')
+            .map(mapApiTransactionToUi);
     }, [apiTransactions]);
 
 
-    // Now, filteredUiTransactions doesn't need to filter for 'expense' on the client-side
-    // as the API call handles it. It will just pass through uiTransactions.
-    // If 'income' is also API-filtered, this can be simplified further.
-    // For 'all', it shows all (which are fetched by getAllTransactions without type filter).
-    const filteredUiTransactions = useMemo(() => {
-        // No specific client-side filtering needed here anymore if API handles it
-        // The `activeFilter` in `fetchTransactions` now determines what `apiTransactions` contains.
-        return uiTransactions;
-    }, [uiTransactions]); // activeFilter is removed as dependency, data is already filtered by API
-
+    // Calculate totalIncome and totalExpense from the complete uiTransactions set
     const totalIncome = useMemo(() =>
-        filteredUiTransactions
-            // If activeFilter === 'income', filteredUiTransactions already only contains income.
-            // If activeFilter === 'all' or 'expense', we still need to pick out income for this specific total.
-            .filter(t => t.originalApiType === 'income' || t.originalApiType === 'lend')
+        uiTransactions // Base on the full uiTransactions
+            .filter(t => t.originalApiType === 'income')
             .reduce((sum, t) => sum + Math.abs(t.amountRaw), 0),
-        [filteredUiTransactions]
+        [uiTransactions] // Dependency is the full uiTransactions
     );
     const totalExpense = useMemo(() =>
-        filteredUiTransactions
-            // If activeFilter === 'expense', filteredUiTransactions already only contains expenses.
-            // If activeFilter === 'all' or 'income', we still need to pick out expenses for this specific total.
-            .filter(t => t.originalApiType !== 'income' && t.originalApiType !== 'lend')
+        uiTransactions // Base on the full uiTransactions
+            // 'borrow' and 'lend' are already excluded from uiTransactions.
+            // So, anything not 'income' is considered an expense for this card.
+            .filter(t => t.originalApiType !== 'income')
             .reduce((sum, t) => sum + Math.abs(t.amountRaw), 0),
-        [filteredUiTransactions]
+        [uiTransactions] // Dependency is the full uiTransactions
     );
+
+    // filteredUiTransactions will apply the activeFilter for the list display
+    const filteredUiTransactions = useMemo(() => {
+        if (activeFilter === 'all') {
+            return uiTransactions;
+        }
+        return uiTransactions.filter(t => {
+            if (activeFilter === 'income') {
+                return t.originalApiType === 'income';
+            }
+            if (activeFilter === 'expense') {
+                // Since 'borrow' and 'lend' are already out of uiTransactions,
+                // 'expense' here means any other non-income transaction.
+                return t.originalApiType !== 'income';
+            }
+            return true; // Should not be reached if activeFilter is valid
+        });
+    }, [uiTransactions, activeFilter]);
 
 
     const groupedTransactions = useMemo(() => groupTransactionsByMonth(filteredUiTransactions), [filteredUiTransactions]);
@@ -212,13 +207,14 @@ const AllTransactionsScreen = () => {
     }
 
     return (
+
         <SafeAreaView className="flex-1 bg-primary">
             <Stack.Screen options={{ headerShown: false }} />
-            <StatusBar barStyle="light-content" />
+            <StatusBar />
             <GoBackToHomeHeader title='Transactions' />
 
             <View className="px-6 pb-6 space-y-3">
-                <View className="flex-row space-x-3">
+                <View className="flex-row">
                     <TouchableOpacity
                         className={`flex-1 p-4 rounded-xl shadow items-center ${activeFilter === 'income' ? 'bg-white/40 border-2 border-white' : 'bg-white/20'}`}
                         onPress={() => setActiveFilter(prev => prev === 'income' ? 'all' : 'income')}
@@ -228,7 +224,7 @@ const AllTransactionsScreen = () => {
                         <Text className="text-xl font-pbold text-white">{numeral(totalIncome).format('$0,0.00')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        className={`flex-1 p-4 rounded-xl shadow items-center ${activeFilter === 'expense' ? 'bg-white/40 border-2 border-white' : 'bg-white/20'}`}
+                        className={`ml-5 flex-1 p-4 rounded-xl shadow items-center ${activeFilter === 'expense' ? 'bg-white/40 border-2 border-white' : 'bg-white/20'}`}
                         onPress={() => setActiveFilter(prev => prev === 'expense' ? 'all' : 'expense')}
                     >
                         <MaterialCommunityIcons name="arrow-bottom-left-thick" size={20} color="white" />

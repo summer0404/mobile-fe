@@ -9,7 +9,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/utils/theme';
 import { handleAddDebt } from '../../controller/DebtController';
-import { TransactionStatus, TransactionType } from '../constants/enum';
+import { TransactionStatus, TransactionType } from '@/constants/enum';
 
 export default function AddDebt() {
     const router = useRouter();
@@ -33,21 +33,8 @@ export default function AddDebt() {
     const [loading, setLoading] = useState(false);
 
     const [typeItems, setTypeItems] = useState([
-        { label: 'Income', value: 'income' },
-        { label: 'Education', value: 'education' },
-        { label: 'Food', value: 'food' },
-        { label: 'Transport', value: 'transport' },
-        { label: 'Groceries', value: 'groceries' },
-        { label: 'Shopping', value: 'shopping' },
-        { label: 'Entertainment', value: 'entertainment' },
-        { label: 'Beauty', value: 'beauty' },
-        { label: 'Health', value: 'health' },
-        { label: 'Vacation', value: 'vacation' },
-        { label: 'Bill', value: 'bill' },
-        { label: 'Home', value: 'home' },
         { label: 'Borrow', value: 'borrow' },
         { label: 'Lend', value: 'lend' },
-        { label: 'Other', value: 'other' },
     ]);
 
     const [statusItems, setStatusItems] = useState([

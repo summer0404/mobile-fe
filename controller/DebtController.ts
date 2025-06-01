@@ -13,7 +13,6 @@ export interface DebtFormData {
     date: string;
     dueDate: string | null;
     status: TransactionStatus;
-    userId: number;
 }
 
 /**
@@ -118,7 +117,8 @@ export const handleUpdateDebt = async (
 ) => {
   try {
     const safeId = Array.isArray(id) ? id[0] : id;
-    const response = await apiRequest(`${URL_BACKEND}/debts/${safeId}`, 'PUT', form);
+    console.log('Fomr update debt', form);
+    const response = await apiRequest(`${URL_BACKEND}/debts/${safeId}`, 'PATCH', form);
     console.log('Update response:', response);
     // ToastAndroid.show('Debt updated successfully!', ToastAndroid.SHORT);
     onSuccess();

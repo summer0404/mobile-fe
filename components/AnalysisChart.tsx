@@ -51,12 +51,12 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data /*, maxValue = 120 *
             </View>
 
             {/* Legend */}
-            <View className="flex-row justify-center space-x-6 mb-4">
+            <View className="flex-row justify-center mb-4">
                 <View className="flex-row items-center">
                     <View className="w-3 h-3 rounded-full bg-[#00D09E] mr-2" />
                     <Text className="text-xs text-gray-700">Income</Text>
                 </View>
-                <View className="flex-row items-center">
+                <View className="flex-row items-center ml-5">
                     <View className="w-3 h-3 rounded-full bg-[#0068FF] mr-2" />
                     <Text className="text-xs text-gray-700">Expenses</Text>
                 </View>

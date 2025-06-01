@@ -4,12 +4,13 @@ import { useRouter } from 'expo-router';
 import { View, Text, StyleSheet, Pressable, TouchableOpacity, Image } from 'react-native';
 
 export default function DebtList({ data }: { data: any[] }) {
+  console.log("data: ", data);
   const router = useRouter();
 
   // Nhóm các khoản nợ theo tháng và năm
   const grouped: Record<string, any[]> = {};
   data.forEach(item => {
-    const date = new Date(item.date);
+    const date = new Date(item.dueDate);
     const month = date.toLocaleString('en-US', { month: 'long' });
     const year = date.getFullYear();
     const key = `${month} ${year}`;
@@ -34,7 +35,7 @@ export default function DebtList({ data }: { data: any[] }) {
             >
               <View>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.date}>{new Date(item.date).toLocaleDateString()}</Text>
+                <Text style={styles.date}>{new Date(item.dueDate).toLocaleDateString()}</Text>
               </View>
               <Text style={[styles.status, styles.separator]}>{item.status}</Text>
               <Text

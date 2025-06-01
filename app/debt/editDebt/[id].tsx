@@ -9,7 +9,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/utils/theme';
 import { handleGetDebt, handleUpdateDebt } from '../../../controller/DebtController';
-import { TransactionStatus, TransactionType } from '@/app/constants/enum';
+import { TransactionStatus, TransactionType } from '@/constants/enum';
 
 export default function EditDebt() {
   const { id } = useLocalSearchParams();
@@ -33,28 +33,15 @@ export default function EditDebt() {
   const [openType, setOpenType] = useState(false);
   const [openStatus, setOpenStatus] = useState(false);
 
-    const [typeItems, setTypeItems] = useState([
-        { label: 'Income', value: 'income' },
-        { label: 'Education', value: 'education' },
-        { label: 'Food', value: 'food' },
-        { label: 'Transport', value: 'transport' },
-        { label: 'Groceries', value: 'groceries' },
-        { label: 'Shopping', value: 'shopping' },
-        { label: 'Entertainment', value: 'entertainment' },
-        { label: 'Beauty', value: 'beauty' },
-        { label: 'Health', value: 'health' },
-        { label: 'Vacation', value: 'vacation' },
-        { label: 'Bill', value: 'bill' },
-        { label: 'Home', value: 'home' },
-        { label: 'Borrow', value: 'borrow' },
-        { label: 'Lend', value: 'lend' },
-        { label: 'Other', value: 'other' },
-    ]);
+  const [typeItems, setTypeItems] = useState([
+    { label: 'Borrow', value: 'borrow' },
+    { label: 'Lend', value: 'lend' },
+  ]);
 
-    const [statusItems, setStatusItems] = useState([
-        { label: 'Pending', value: 'pending' },
-        { label: 'Paid', value: 'paid' },
-    ]);
+  const [statusItems, setStatusItems] = useState([
+    { label: 'Pending', value: 'pending' },
+    { label: 'Paid', value: 'paid' }
+  ]);
 
   const handleChange = (key: string, value: any) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -103,7 +90,6 @@ export default function EditDebt() {
           date: form.date.toISOString(),
           dueDate: form.dueDate?.toISOString() || null,
           status: form.status as TransactionStatus,
-          userId: 1, // 🔧 TODO: lấy userId thực tế từ context/auth
         },
         () => router.back(),
         (err) => console.error(err)
@@ -139,6 +125,7 @@ export default function EditDebt() {
 
         <Text style={styles.label}>Type</Text>
         <DropDownPicker
+          listMode='MODAL'
           open={openType}
           setOpen={setOpenType}
           value={form.type}
@@ -219,6 +206,7 @@ export default function EditDebt() {
 
         <Text style={styles.label}>Status</Text>
         <DropDownPicker
+          listMode='MODAL'
           open={openStatus}
           setOpen={setOpenStatus}
           value={form.status}

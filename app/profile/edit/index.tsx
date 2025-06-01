@@ -77,7 +77,6 @@ const EditProfileScreen = () => {
                     email: apiData.email || '',
                     target: apiData.target,
                     createdAt: apiData.createdAt,
-                    // pushNotificationsEnabled: initialFormState.pushNotificationsEnabled, // Or from apiData if available - REMOVED
                 });
             } else {
                 let errorMessage = 'Failed to fetch profile data.';
@@ -119,8 +118,6 @@ const EditProfileScreen = () => {
             lastName: profileData.lastName,
             email: profileData.email,
             target: profileData.target,
-            // Only include password if it's been changed and is not empty
-            ...(profileData.password && profileData.password.trim() !== '' && { password: profileData.password }),
         };
 
         // Optional: Remove undefined fields if your backend prefers that for PATCH
@@ -222,32 +219,10 @@ const EditProfileScreen = () => {
                             containerStyle="mb-4"
                         />
                     )}
-                     {/* {profileData.createdAt && (
-                        <TextInput
-                            label="Member Since"
-                            value={new Date(profileData.createdAt).toLocaleDateString()} // Format date
-                            className="bg-gray-200/70"
-                            containerStyle="mb-4"
-                        />
-                    )} */}
-
-
-                    {/* Toggle Switches - REMOVED PUSH NOTIFICATION TOGGLE */}
-                    {/* 
-                    <View className="flex-row justify-between items-center py-3.5 px-1 mb-3">
-                        <Text className="text-base text-black">Push Notifications</Text>
-                        <Switch
-                            trackColor={{ false: "#E0E0E0", true: "#C9A0DC" }}
-                            thumbColor={profileData.pushNotificationsEnabled ? "#8A2BE2" : "#f4f3f4"}
-                            ios_backgroundColor="#E0E0E0"
-                            onValueChange={(val) => handleInputChange('pushNotificationsEnabled', val)}
-                            value={profileData.pushNotificationsEnabled}
-                        />
-                    </View> 
-                    */}
+        
                     <TouchableOpacity
                         onPress={handleUpdateProfile}
-                        disabled={isSubmitting || isLoading} // Disable button while submitting or initial loading
+                        disabled={isSubmitting || isLoading}
                         className={`py-4 rounded-full items-center justify-center shadow-md ${isSubmitting || isLoading ? 'bg-gray-400' : 'bg-primary'}`}
                     >
                         {isSubmitting ? (
