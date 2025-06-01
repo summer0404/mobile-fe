@@ -1,8 +1,8 @@
 // controller/DebtController.ts
 import { ToastAndroid } from 'react-native';
 import { apiRequest } from '@/utils/commonUtil';
-import { TransactionStatus, TransactionType } from '../app/constants/enum';
-import { URL_BACKEND } from '@/app/constants';
+import { TransactionStatus, TransactionType } from '../constants/enum';
+import { URL_BACKEND } from '../constants';
 
 export interface DebtFormData {
     name: string;
