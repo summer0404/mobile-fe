@@ -1,29 +1,31 @@
-import { authenticatedFetch, SessionExpiredError } from '@/utils/apiClient'; // Adjust path if needed
+import { authenticatedFetch, SessionExpiredError } from "@/utils/apiClient"; // Adjust path if needed
+import analytics from "@react-native-firebase/analytics";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BE_URL || 'http://localhost:3010/api/v1'; // Fallback
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_BE_URL || "http://localhost:3010/api/v1"; // Fallback
 
 export type TransactionType =
-  | 'income'
-  | 'education'
-  | 'food'
-  | 'transport'
-  | 'groceries'
-  | 'shopping'
-  | 'entertainment'
-  | 'beauty'
-  | 'health'
-  | 'vacation'
-  | 'bill'
-  | 'home'
-  | 'borrow'
-  | 'lend'
-  | 'other';
+  | "income"
+  | "education"
+  | "food"
+  | "transport"
+  | "groceries"
+  | "shopping"
+  | "entertainment"
+  | "beauty"
+  | "health"
+  | "vacation"
+  | "bill"
+  | "home"
+  | "borrow"
+  | "lend"
+  | "other";
 
 export interface Transaction {
   id: number | string;
   name: string;
   type: TransactionType;
-  amount: number; 
+  amount: number;
   detail?: string | null;
   date: string;
   createdAt?: string;
@@ -78,28 +80,46 @@ interface ApiResponse<T> {
 export const createTransaction = async (
   transactionData: CreateTransactionData
 ): Promise<ApiResponse<Transaction>> => {
+  analytics().logEvent("create_transaction", {
+    transactionType: transactionData.type,
+    transactionAmount: transactionData.amount,
+    transactionName: transactionData.name,
+  });
   const requestUrl = `${API_BASE_URL}/transactions`;
-  console.log('[transactionsService] Creating transaction at:', requestUrl, 'with data:', transactionData);
+  console.log(
+    "[transactionsService] Creating transaction at:",
+    requestUrl,
+    "with data:",
+    transactionData
+  );
 
   try {
-    const response = await authenticatedFetch(requestUrl, { // USE authenticatedFetch
-      method: 'POST',
+    const response = await authenticatedFetch(requestUrl, {
+      // USE authenticatedFetch
+      method: "POST",
       // headers: { 'Content-Type': 'application/json' } is handled by authenticatedFetch
       body: JSON.stringify(transactionData),
       // credentials: 'include' is handled by authenticatedFetch
     });
 
     const responseText = await response.text();
-    console.log('[transactionsService] CreateTransaction Response Status:', response.status);
+    console.log(
+      "[transactionsService] CreateTransaction Response Status:",
+      response.status
+    );
 
     if (!response.ok) {
-      console.error(`[transactionsService] CreateTransaction API failed with status ${response.status}.`);
+      console.error(
+        `[transactionsService] CreateTransaction API failed with status ${response.status}.`
+      );
       // authenticatedFetch handles the specific 401 "Session expired" case.
       try {
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to create transaction: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to create transaction: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -117,27 +137,36 @@ export const createTransaction = async (
       const responseData = JSON.parse(responseText);
       return {
         success: true,
-        message: responseData.message || 'Transaction created successfully',
+        message: responseData.message || "Transaction created successfully",
         data: responseData.data || responseData,
       };
     } catch (jsonParseError) {
-      console.error('[transactionsService] CreateTransaction JSON parsing failed:', jsonParseError);
+      console.error(
+        "[transactionsService] CreateTransaction JSON parsing failed:",
+        jsonParseError
+      );
       return {
         success: false,
-        message: 'Failed to parse successful server response for create transaction.',
+        message:
+          "Failed to parse successful server response for create transaction.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
     }
   } catch (error) {
     if (error instanceof SessionExpiredError) {
-      console.log('[transactionsService] createTransaction caught SessionExpiredError, redirect initiated.');
+      console.log(
+        "[transactionsService] createTransaction caught SessionExpiredError, redirect initiated."
+      );
       return { success: false, message: error.message, error: error.name };
     }
-    console.error('[transactionsService] CreateTransaction network error or other issue:', error);
+    console.error(
+      "[transactionsService] CreateTransaction network error or other issue:",
+      error
+    );
     return {
       success: false,
-      message: 'A network error occurred while creating the transaction.',
+      message: "A network error occurred while creating the transaction.",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -163,7 +192,7 @@ export interface GetAllTransactionsParams {
 export const getAllTransactions = async (
   params?: GetAllTransactionsParams
 ): Promise<ApiResponse<PaginatedTransactionsResponse>> => {
-  let queryString = '';
+  let queryString = "";
   if (params) {
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -174,26 +203,39 @@ export const getAllTransactions = async (
     queryString = queryParams.toString();
   }
 
-  const requestUrl = `${API_BASE_URL}/transactions${queryString ? `?${queryString}` : ''}`;
-  console.log('[transactionsService] Getting all transactions from:', requestUrl);
+  const requestUrl = `${API_BASE_URL}/transactions${
+    queryString ? `?${queryString}` : ""
+  }`;
+  console.log(
+    "[transactionsService] Getting all transactions from:",
+    requestUrl
+  );
 
   try {
-    const response = await authenticatedFetch(requestUrl, { // USE authenticatedFetch
-      method: 'GET',
+    const response = await authenticatedFetch(requestUrl, {
+      // USE authenticatedFetch
+      method: "GET",
       // headers and credentials handled by authenticatedFetch
     });
 
     const responseText = await response.text();
-    console.log('[transactionsService] GetAllTransactions Response Status:', response.status);
+    console.log(
+      "[transactionsService] GetAllTransactions Response Status:",
+      response.status
+    );
 
     if (!response.ok) {
-      console.error(`[transactionsService] GetAllTransactions API failed with status ${response.status}.`);
+      console.error(
+        `[transactionsService] GetAllTransactions API failed with status ${response.status}.`
+      );
       // authenticatedFetch handles the specific 401 "Session expired" case.
       try {
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to fetch transactions: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to fetch transactions: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -210,10 +252,15 @@ export const getAllTransactions = async (
     try {
       const parsedResponse = JSON.parse(responseText);
 
-      if (parsedResponse.data && Array.isArray(parsedResponse.data.items) && parsedResponse.data.meta) {
+      if (
+        parsedResponse.data &&
+        Array.isArray(parsedResponse.data.items) &&
+        parsedResponse.data.meta
+      ) {
         return {
           success: true,
-          message: parsedResponse.message || 'Transactions fetched successfully',
+          message:
+            parsedResponse.message || "Transactions fetched successfully",
           data: parsedResponse.data,
           currentPage: parsedResponse.data.meta.currentPage,
           totalPages: parsedResponse.data.meta.totalPages,
@@ -221,37 +268,50 @@ export const getAllTransactions = async (
         };
       } else if (Array.isArray(parsedResponse)) {
         return {
-            success: true,
-            message: 'Transactions fetched successfully (as direct array)',
-            data: { items: parsedResponse, meta: {} }
+          success: true,
+          message: "Transactions fetched successfully (as direct array)",
+          data: { items: parsedResponse, meta: {} },
         };
       } else {
-        console.error('[transactionsService] GetAllTransactions parsed response.data is not in the expected paginated format:', parsedResponse.data);
+        console.error(
+          "[transactionsService] GetAllTransactions parsed response.data is not in the expected paginated format:",
+          parsedResponse.data
+        );
         return {
           success: false,
-          message: 'Server response for transactions was not in the expected paginated format.',
-          error: 'Invalid data structure',
+          message:
+            "Server response for transactions was not in the expected paginated format.",
+          error: "Invalid data structure",
           rawErrorResponse: responseText.substring(0, 500),
         };
       }
     } catch (jsonParseError) {
-      console.error('[transactionsService] GetAllTransactions JSON parsing failed:', jsonParseError);
+      console.error(
+        "[transactionsService] GetAllTransactions JSON parsing failed:",
+        jsonParseError
+      );
       return {
         success: false,
-        message: 'Failed to parse successful server response for get all transactions.',
+        message:
+          "Failed to parse successful server response for get all transactions.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
     }
   } catch (error) {
     if (error instanceof SessionExpiredError) {
-      console.log('[transactionsService] getAllTransactions caught SessionExpiredError, redirect initiated.');
+      console.log(
+        "[transactionsService] getAllTransactions caught SessionExpiredError, redirect initiated."
+      );
       return { success: false, message: error.message, error: error.name };
     }
-    console.error('[transactionsService] GetAllTransactions network error or other issue:', error);
+    console.error(
+      "[transactionsService] GetAllTransactions network error or other issue:",
+      error
+    );
     return {
       success: false,
-      message: 'A network error occurred while fetching transactions.',
+      message: "A network error occurred while fetching transactions.",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -264,7 +324,7 @@ export const getAllTransactions = async (
 export const getAllExpenseTransactions = async (
   params?: GetAllTransactionsParams
 ): Promise<ApiResponse<PaginatedTransactionsResponse>> => {
-  let queryString = '';
+  let queryString = "";
   if (params) {
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -275,26 +335,39 @@ export const getAllExpenseTransactions = async (
     queryString = queryParams.toString();
   }
 
-  const requestUrl = `${API_BASE_URL}/transactions/expenses${queryString ? `?${queryString}` : ''}`;
-  console.log('[transactionsService] Getting all expense transactions from:', requestUrl);
+  const requestUrl = `${API_BASE_URL}/transactions/expenses${
+    queryString ? `?${queryString}` : ""
+  }`;
+  console.log(
+    "[transactionsService] Getting all expense transactions from:",
+    requestUrl
+  );
 
   try {
-    const response = await authenticatedFetch(requestUrl, { // USE authenticatedFetch
-      method: 'GET',
+    const response = await authenticatedFetch(requestUrl, {
+      // USE authenticatedFetch
+      method: "GET",
       // headers and credentials handled by authenticatedFetch
     });
 
     const responseText = await response.text();
-    console.log('[transactionsService] GetAllExpenseTransactions Response Status:', response.status);
+    console.log(
+      "[transactionsService] GetAllExpenseTransactions Response Status:",
+      response.status
+    );
 
     if (!response.ok) {
-      console.error(`[transactionsService] GetAllExpenseTransactions API failed with status ${response.status}.`);
+      console.error(
+        `[transactionsService] GetAllExpenseTransactions API failed with status ${response.status}.`
+      );
       // authenticatedFetch handles the specific 401 "Session expired" case.
       try {
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to fetch expense transactions: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to fetch expense transactions: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -311,57 +384,82 @@ export const getAllExpenseTransactions = async (
     try {
       const parsedResponse = JSON.parse(responseText);
 
-      if (parsedResponse.data && Array.isArray(parsedResponse.data.items) && parsedResponse.data.meta) {
+      if (
+        parsedResponse.data &&
+        Array.isArray(parsedResponse.data.items) &&
+        parsedResponse.data.meta
+      ) {
         return {
           success: true,
-          message: parsedResponse.message || 'Expense transactions fetched successfully',
+          message:
+            parsedResponse.message ||
+            "Expense transactions fetched successfully",
           data: parsedResponse.data,
           currentPage: parsedResponse.data.meta.currentPage,
           totalPages: parsedResponse.data.meta.totalPages,
           totalItems: parsedResponse.data.meta.totalItems,
         };
       } else if (Array.isArray(parsedResponse.data)) {
-        console.warn('[transactionsService] GetAllExpenseTransactions response.data is a direct array. Wrapping in PaginatedTransactionsResponse.');
+        console.warn(
+          "[transactionsService] GetAllExpenseTransactions response.data is a direct array. Wrapping in PaginatedTransactionsResponse."
+        );
         return {
-            success: true,
-            message: parsedResponse.message || 'Expense transactions fetched successfully (as direct array in data field)',
-            data: { items: parsedResponse.data as Transaction[], meta: {} }
+          success: true,
+          message:
+            parsedResponse.message ||
+            "Expense transactions fetched successfully (as direct array in data field)",
+          data: { items: parsedResponse.data as Transaction[], meta: {} },
         };
       } else if (Array.isArray(parsedResponse)) {
-        console.warn('[transactionsService] GetAllExpenseTransactions response is a direct array. Wrapping in PaginatedTransactionsResponse.');
+        console.warn(
+          "[transactionsService] GetAllExpenseTransactions response is a direct array. Wrapping in PaginatedTransactionsResponse."
+        );
         return {
-            success: true,
-            message: 'Expense transactions fetched successfully (as direct array)',
-            data: { items: parsedResponse as Transaction[], meta: {} }
+          success: true,
+          message:
+            "Expense transactions fetched successfully (as direct array)",
+          data: { items: parsedResponse as Transaction[], meta: {} },
         };
-      }
-      else {
-        console.error('[transactionsService] GetAllExpenseTransactions parsed response is not a recognized paginated format:', parsedResponse);
+      } else {
+        console.error(
+          "[transactionsService] GetAllExpenseTransactions parsed response is not a recognized paginated format:",
+          parsedResponse
+        );
         return {
           success: false,
-          message: 'Server response for expense transactions was not in the expected paginated format.',
-          error: 'Invalid data structure',
+          message:
+            "Server response for expense transactions was not in the expected paginated format.",
+          error: "Invalid data structure",
           rawErrorResponse: responseText.substring(0, 500),
         };
       }
     } catch (jsonParseError) {
-      console.error('[transactionsService] GetAllExpenseTransactions JSON parsing failed:', jsonParseError);
+      console.error(
+        "[transactionsService] GetAllExpenseTransactions JSON parsing failed:",
+        jsonParseError
+      );
       return {
         success: false,
-        message: 'Failed to parse successful server response for get all expense transactions.',
+        message:
+          "Failed to parse successful server response for get all expense transactions.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
     }
   } catch (error) {
     if (error instanceof SessionExpiredError) {
-      console.log('[transactionsService] getAllExpenseTransactions caught SessionExpiredError, redirect initiated.');
+      console.log(
+        "[transactionsService] getAllExpenseTransactions caught SessionExpiredError, redirect initiated."
+      );
       return { success: false, message: error.message, error: error.name };
     }
-    console.error('[transactionsService] GetAllExpenseTransactions network error or other issue:', error);
+    console.error(
+      "[transactionsService] GetAllExpenseTransactions network error or other issue:",
+      error
+    );
     return {
       success: false,
-      message: 'A network error occurred while fetching expense transactions.',
+      message: "A network error occurred while fetching expense transactions.",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -376,26 +474,39 @@ export const updateTransaction = async (
   transactionData: UpdateTransactionData
 ): Promise<ApiResponse<Transaction>> => {
   const requestUrl = `${API_BASE_URL}/transactions/${id}`;
-  console.log(`[transactionsService] Updating transaction ${id} at:`, requestUrl, 'with data:', transactionData);
+  console.log(
+    `[transactionsService] Updating transaction ${id} at:`,
+    requestUrl,
+    "with data:",
+    transactionData
+  );
 
   try {
-    const response = await authenticatedFetch(requestUrl, { // USE authenticatedFetch
-      method: 'PATCH',
+    const response = await authenticatedFetch(requestUrl, {
+      // USE authenticatedFetch
+      method: "PATCH",
       // headers and credentials handled by authenticatedFetch
       body: JSON.stringify(transactionData),
     });
 
     const responseText = await response.text();
-    console.log(`[transactionsService] UpdateTransaction Response Status for ${id}:`, response.status);
+    console.log(
+      `[transactionsService] UpdateTransaction Response Status for ${id}:`,
+      response.status
+    );
 
     if (!response.ok) {
-      console.error(`[transactionsService] UpdateTransaction API failed for ${id} with status ${response.status}.`);
+      console.error(
+        `[transactionsService] UpdateTransaction API failed for ${id} with status ${response.status}.`
+      );
       // authenticatedFetch handles the specific 401 "Session expired" case.
       try {
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to update transaction: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to update transaction: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -413,27 +524,36 @@ export const updateTransaction = async (
       const responseData = JSON.parse(responseText);
       return {
         success: true,
-        message: responseData.message || 'Transaction updated successfully',
+        message: responseData.message || "Transaction updated successfully",
         data: responseData.data || responseData,
       };
     } catch (jsonParseError) {
-      console.error('[transactionsService] UpdateTransaction JSON parsing failed:', jsonParseError);
+      console.error(
+        "[transactionsService] UpdateTransaction JSON parsing failed:",
+        jsonParseError
+      );
       return {
         success: false,
-        message: 'Failed to parse successful server response for update transaction.',
+        message:
+          "Failed to parse successful server response for update transaction.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
     }
   } catch (error) {
     if (error instanceof SessionExpiredError) {
-      console.log(`[transactionsService] updateTransaction for ${id} caught SessionExpiredError, redirect initiated.`);
+      console.log(
+        `[transactionsService] updateTransaction for ${id} caught SessionExpiredError, redirect initiated.`
+      );
       return { success: false, message: error.message, error: error.name };
     }
-    console.error(`[transactionsService] UpdateTransaction network error for ${id} or other issue:`, error);
+    console.error(
+      `[transactionsService] UpdateTransaction network error for ${id} or other issue:`,
+      error
+    );
     return {
       success: false,
-      message: 'A network error occurred while updating the transaction.',
+      message: "A network error occurred while updating the transaction.",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -447,25 +567,36 @@ export const deleteTransaction = async (
   id: number | string
 ): Promise<ApiResponse<null>> => {
   const requestUrl = `${API_BASE_URL}/transactions/${id}`;
-  console.log(`[transactionsService] Deleting transaction ${id} at:`, requestUrl);
+  console.log(
+    `[transactionsService] Deleting transaction ${id} at:`,
+    requestUrl
+  );
 
   try {
-    const response = await authenticatedFetch(requestUrl, { // USE authenticatedFetch
-      method: 'DELETE',
+    const response = await authenticatedFetch(requestUrl, {
+      // USE authenticatedFetch
+      method: "DELETE",
       // headers and credentials handled by authenticatedFetch
     });
 
     const responseText = await response.text();
-    console.log(`[transactionsService] DeleteTransaction Response Status for ${id}:`, response.status);
+    console.log(
+      `[transactionsService] DeleteTransaction Response Status for ${id}:`,
+      response.status
+    );
 
     if (!response.ok) {
-      console.error(`[transactionsService] DeleteTransaction API failed for ${id} with status ${response.status}.`);
+      console.error(
+        `[transactionsService] DeleteTransaction API failed for ${id} with status ${response.status}.`
+      );
       // authenticatedFetch handles the specific 401 "Session expired" case.
       try {
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to delete transaction: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to delete transaction: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -479,10 +610,10 @@ export const deleteTransaction = async (
       }
     }
 
-    if (response.status === 204 || responseText.trim() === '') {
+    if (response.status === 204 || responseText.trim() === "") {
       return {
         success: true,
-        message: 'Transaction deleted successfully',
+        message: "Transaction deleted successfully",
         data: null,
       };
     }
@@ -491,30 +622,46 @@ export const deleteTransaction = async (
       const responseData = JSON.parse(responseText);
       return {
         success: true,
-        message: responseData.message || 'Transaction deleted successfully',
+        message: responseData.message || "Transaction deleted successfully",
         data: null,
       };
     } catch (jsonParseError) {
-      if (responseText.toLowerCase().includes('ok') || responseText.toLowerCase().includes('success')) {
-        return { success: true, message: "Transaction deleted successfully (server response was not JSON)." };
+      if (
+        responseText.toLowerCase().includes("ok") ||
+        responseText.toLowerCase().includes("success")
+      ) {
+        return {
+          success: true,
+          message:
+            "Transaction deleted successfully (server response was not JSON).",
+        };
       }
-      console.error('[transactionsService] DeleteTransaction JSON parsing failed for successful response:', jsonParseError);
+      console.error(
+        "[transactionsService] DeleteTransaction JSON parsing failed for successful response:",
+        jsonParseError
+      );
       return {
         success: false,
-        message: 'Failed to parse successful server response for delete transaction.',
+        message:
+          "Failed to parse successful server response for delete transaction.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
     }
   } catch (error) {
     if (error instanceof SessionExpiredError) {
-      console.log(`[transactionsService] deleteTransaction for ${id} caught SessionExpiredError, redirect initiated.`);
+      console.log(
+        `[transactionsService] deleteTransaction for ${id} caught SessionExpiredError, redirect initiated.`
+      );
       return { success: false, message: error.message, error: error.name };
     }
-    console.error(`[transactionsService] DeleteTransaction network error for ${id} or other issue:`, error);
+    console.error(
+      `[transactionsService] DeleteTransaction network error for ${id} or other issue:`,
+      error
+    );
     return {
       success: false,
-      message: 'A network error occurred while deleting the transaction.',
+      message: "A network error occurred while deleting the transaction.",
       error: error instanceof Error ? error.message : String(error),
     };
   }

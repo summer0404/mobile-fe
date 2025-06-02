@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "259566619774",
+    "project_id": "treazure-873e1",
+    "storage_bucket": "treazure-873e1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:259566619774:android:faa6c5082a436ccef99c2f",
+        "android_client_info": {
+          "package_name": "com.summer04.Treazure"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAf0ZVIpUVDrGDpX1Oy0vmre8A0OGvaURI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
