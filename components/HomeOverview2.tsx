@@ -19,7 +19,7 @@ const HomeOverview2 = ({ revenue, food, debtPercentage }: HomeOverview2Props) =>
               <View>
                 <View className="flex-row items-center">
                   <MaterialCommunityIcons name="cash-multiple" size={24} color="white" />
-                  <Text className="text-white text-xs ml-2">Revenue This Week</Text>
+                  <Text className="text-white text-xs ml-2">Income This Week</Text>
                 </View>
                 <Text className="text-white font-psemibold text-lg">${revenue}</Text>
               </View>

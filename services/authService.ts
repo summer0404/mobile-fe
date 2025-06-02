@@ -126,7 +126,7 @@ export const logIn = async (credentials: LoginCredentials): Promise<LogInRespons
 
 
     if (!response.ok) {
-      console.error(`[authService] LogIn API failed with status ${response.status}.`);
+      // console.error(`[authService] LogIn API failed with status ${response.status}.`);
       try {
         const errorData = JSON.parse(responseText);
         return {

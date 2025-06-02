@@ -6,6 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { handleFetchDebts } from '../../controller/DebtController';
 import numeral from 'numeral'; // For formatting numbers
+import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 
 // Define a more specific type for your debt items
 interface DebtItem {
@@ -41,13 +42,13 @@ export default function Debt() {
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const responseData = await handleFetchDebts(); 
-          if (isActive && responseData && responseData.items) { 
+          const responseData = await handleFetchDebts();
+          if (isActive && responseData && responseData.items) {
             const transformed: DebtItem[] = responseData.items.map((item: any) => ({
               id: item.id,
               debtorName: item.debtorName,
               dueDate: new Date(item.dueDate),
-              status: item.status, 
+              status: item.status,
               debt_date: new Date(item.transaction.date),
               type: ['lend', 'borrow'].includes(item.transaction.type) ? item.transaction.type : 'lend',
               name: item.transaction.name,
@@ -56,11 +57,11 @@ export default function Debt() {
             }));
             setDebts(transformed);
           } else if (isActive) {
-            setDebts([]); 
+            setDebts([]);
           }
         } catch (error) {
           console.error('Failed to fetch debts:', error);
-          if (isActive) setDebts([]); 
+          if (isActive) setDebts([]);
         } finally {
           if (isActive) setIsLoading(false);
         }
@@ -131,22 +132,25 @@ export default function Debt() {
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
+    <ScrollView
+      style={styles.container}
       contentContainerStyle={{ flexGrow: 1 }}
-      // Add RefreshControl if you want pull-to-refresh functionality
-      // refreshControl={
-      //   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      // }
+    // Add RefreshControl if you want pull-to-refresh functionality
+    // refreshControl={
+    //   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+    // }
     >
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/home')}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.violet600} />
         </Pressable>
         <Text style={styles.headerTitle}>Debt</Text>
         <Ionicons name="notifications" size={24} color={theme.colors.whiteText} />
+      </View> */}
+      <View className='p-6'>
+        <GoBackToHomeHeader title='Debt' />
       </View>
-
+      
       <TouchableOpacity
         style={[styles.total, filter === 'all' && { backgroundColor: theme.colors.purple300 }]}
         onPress={() => setFilter('all')}
@@ -184,13 +188,13 @@ export default function Debt() {
         </TouchableOpacity>
 
         {isLoading ? (
-          <ActivityIndicator size="large" color={theme.colors.violet600} style={{ marginTop: 50 }}/>
+          <ActivityIndicator size="large" color={theme.colors.violet600} style={{ marginTop: 50 }} />
         ) : (
           <DebtList data={filteredDebts} />
         )}
       </View>
     </ScrollView>
-      
+
   );
 }
 

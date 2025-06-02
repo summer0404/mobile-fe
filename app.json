@@ -4,7 +4,7 @@
     "slug": "Treazure",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo/Treazure.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.summer04.Treazure"
     },
     "web": {
       "bundler": "metro",
@@ -42,10 +43,10 @@
         "origin": false
       },
       "eas": {
-        "projectId": "554e99f8-c566-4731-a49b-5f71aa0f9288"
+        "projectId": "4d3a4126-8aa0-465d-a055-f3e5fe7d1b0d"
       }
     },
-    "owner": "han.lehoangngoc",
+    "owner": "summer04",
     "runtimeVersion": {
       "policy": "appVersion"
     },

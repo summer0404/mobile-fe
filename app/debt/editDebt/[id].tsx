@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Pressable, ToastAndroid
+  ActivityIndicator, Pressable, ToastAndroid, SafeAreaView, StatusBar
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/utils/theme';
 import { handleGetDebt, handleUpdateDebt } from '../../../controller/DebtController';
 import { TransactionStatus, TransactionType } from '@/constants/enum';
+import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 
 export default function EditDebt() {
   const { id } = useLocalSearchParams();
@@ -32,6 +33,10 @@ export default function EditDebt() {
   const [showDueDate, setShowDueDate] = useState(false);
   const [openType, setOpenType] = useState(false);
   const [openStatus, setOpenStatus] = useState(false);
+
+  // Separate state for dropdown values
+  const [typeValue, setTypeValue] = useState('');
+  const [statusValue, setStatusValue] = useState('');
 
   const [typeItems, setTypeItems] = useState([
     { label: 'Borrow', value: 'borrow' },
@@ -56,7 +61,7 @@ export default function EditDebt() {
     const fetchDebt = async () => {
       try {
         const data = await handleGetDebt(id);
-        setForm({
+        const debtData = {
           name: data.name || '',
           type: data.type as TransactionType,
           amount: data.amount?.toString() || '',
@@ -65,7 +70,12 @@ export default function EditDebt() {
           date: new Date(data.date),
           dueDate: new Date(data.dueDate),
           status: data.status || '',
-        });
+        };
+        
+        setForm(debtData);
+        // Set dropdown values separately
+        setTypeValue(debtData.type);
+        setStatusValue(debtData.status);
       } catch (err) {
         ToastAndroid.show('Failed to load debt', ToastAndroid.SHORT);
       } finally {
@@ -83,13 +93,13 @@ export default function EditDebt() {
         id,
         {
           name: form.name,
-          type: form.type as TransactionType,
+          type: typeValue as TransactionType, // Use dropdown state
           amount: parseFloat(form.amount),
           debtorName: form.debtorName,
           detail: form.detail,
           date: form.date.toISOString(),
           dueDate: form.dueDate?.toISOString() || null,
-          status: form.status as TransactionStatus,
+          status: statusValue as TransactionStatus, // Use dropdown state
         },
         () => router.back(),
         (err: any) => console.error(err)
@@ -103,137 +113,160 @@ export default function EditDebt() {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
+      <SafeAreaView style={styles.loadingContainer}>
+        <StatusBar barStyle="light-content" />
         <ActivityIndicator size="large" color={theme.colors.violet600} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Edit Debt</Text>
-        <Ionicons name="notifications" size={24} color="#fff" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      
+      {/* Header */}
+      <View className='p-6'>
+        <GoBackToHomeHeader title='Edit Debt' />
       </View>
 
-      <View style={styles.content}>
-        <Text style={styles.label}>Name</Text>
-        <TextInput style={styles.input} value={form.name} onChangeText={val => handleChange('name', val)} />
+      {/* Content with ScrollView */}
+      <View style={styles.contentWrapper}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.label}>Name</Text>
+          <TextInput style={styles.input} value={form.name} onChangeText={val => handleChange('name', val)} />
 
-        <Text style={styles.label}>Type</Text>
-        <DropDownPicker
-          listMode='MODAL'
-          open={openType}
-          setOpen={setOpenType}
-          value={form.type}
-          setValue={val => handleChange('type', val)}
-          items={typeItems}
-          zIndex={3000}
-          zIndexInverse={2000}
-        />
+          <Text style={styles.label}>Type</Text>
+          <DropDownPicker
+            listMode='MODAL'
+            open={openType}
+            setOpen={setOpenType}
+            value={typeValue}
+            setValue={setTypeValue}
+            items={typeItems}
+            setItems={setTypeItems}
+            onChangeValue={(value) => {
+              if (value) {
+                handleChange('type', value);
+              }
+            }}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={3000}
+            zIndexInverse={2000}
+          />
 
-        <Text style={styles.label}>Amount</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={form.amount}
-          onChangeText={val => handleChange('amount', val)}
-        />
+          <Text style={styles.label}>Amount</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={form.amount}
+            onChangeText={val => handleChange('amount', val)}
+          />
 
-        <Text style={styles.label}>Debtor Name</Text>
-        <TextInput
-          style={styles.input}
-          value={form.debtorName}
-          onChangeText={val => handleChange('debtorName', val)}
-        />
+          <Text style={styles.label}>Debtor Name</Text>
+          <TextInput
+            style={styles.input}
+            value={form.debtorName}
+            onChangeText={val => handleChange('debtorName', val)}
+          />
 
-        <Text style={styles.label}>Detail</Text>
-        <TextInput
-          style={[styles.input, { height: 80 }]}
-          multiline
-          value={form.detail}
-          onChangeText={val => handleChange('detail', val)}
-        />
+          <Text style={styles.label}>Detail</Text>
+          <TextInput
+            style={[styles.input, { height: 80 }]}
+            multiline
+            value={form.detail}
+            onChangeText={val => handleChange('detail', val)}
+          />
 
-        <View style={styles.dateWrapper}>
-          <View style={styles.datePicker}>
-            <Text style={styles.label}>Debt Date</Text>
-            <TouchableOpacity onPress={() => setShowDebtDate(true)}>
-              <TextInput
-                style={styles.input}
-                value={formatDate(form.date)}
-                editable={false}
-              />
-              <View style={{ position: 'absolute', top: 12, right: 10 }}>
-                <CalendarIcon width={24} height={24} />
-              </View>
-            </TouchableOpacity>
-            {showDebtDate && (
-              <DateTimePicker
-                value={form.date}
-                mode="date"
-                display="default"
-                onChange={(e, selectedDate) => {
-                  setShowDebtDate(false);
-                  if (selectedDate) handleChange('date', selectedDate);
-                }}
-              />
-            )}
+          <View style={styles.dateWrapper}>
+            <View style={styles.datePicker}>
+              <Text style={styles.label}>Debt Date</Text>
+              <TouchableOpacity onPress={() => setShowDebtDate(true)}>
+                <TextInput
+                  style={styles.input}
+                  value={formatDate(form.date)}
+                  editable={false}
+                />
+                <View style={{ position: 'absolute', top: 12, right: 10 }}>
+                  <Ionicons name="calendar-outline" size={24} color="#666" />
+                </View>
+              </TouchableOpacity>
+              {showDebtDate && (
+                <DateTimePicker
+                  value={form.date}
+                  mode="date"
+                  display="default"
+                  onChange={(e, selectedDate) => {
+                    setShowDebtDate(false);
+                    if (selectedDate) handleChange('date', selectedDate);
+                  }}
+                />
+              )}
+            </View>
+
+            <View style={styles.datePicker}>
+              <Text style={styles.label}>Due Date</Text>
+              <TouchableOpacity onPress={() => setShowDueDate(true)}>
+                <TextInput
+                  style={styles.input}
+                  value={formatDate(form.dueDate)}
+                  editable={false}
+                />
+                <View style={{ position: 'absolute', top: 12, right: 10 }}>
+                  <Ionicons name="calendar-outline" size={24} color="#666" />
+                </View>
+              </TouchableOpacity>
+              {showDueDate && (
+                <DateTimePicker
+                  value={form.dueDate}
+                  mode="date"
+                  display="default"
+                  onChange={(e, selectedDate) => {
+                    setShowDueDate(false);
+                    if (selectedDate) handleChange('dueDate', selectedDate);
+                  }}
+                />
+              )}
+            </View>
           </View>
 
-          <View style={styles.datePicker}>
-            <Text style={styles.label}>Due Date</Text>
-            <TouchableOpacity onPress={() => setShowDueDate(true)}>
-              <TextInput
-                style={styles.input}
-                value={formatDate(form.dueDate)}
-                editable={false}
-              />
-              <View style={{ position: 'absolute', top: 12, right: 10 }}>
-                <CalendarIcon width={24} height={24} />
-              </View>
+          <Text style={styles.label}>Status</Text>
+          <DropDownPicker
+            listMode='MODAL'
+            open={openStatus}
+            setOpen={setOpenStatus}
+            value={statusValue}
+            setValue={setStatusValue}
+            items={statusItems}
+            setItems={setStatusItems}
+            onChangeValue={(value) => {
+              if (value) {
+                handleChange('status', value);
+              }
+            }}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={2000}
+            zIndexInverse={1000}
+          />
+
+          <View style={styles.buttonWrapper}>
+            <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+              <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-            {showDueDate && (
-              <DateTimePicker
-                value={form.dueDate}
-                mode="date"
-                display="default"
-                onChange={(e, selectedDate) => {
-                  setShowDueDate(false);
-                  if (selectedDate) handleChange('dueDate', selectedDate);
-                }}
-              />
-            )}
+
+            <TouchableOpacity style={styles.button} onPress={handleSave}>
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
+            </TouchableOpacity>
           </View>
-        </View>
-
-        <Text style={styles.label}>Status</Text>
-        <DropDownPicker
-          listMode='MODAL'
-          open={openStatus}
-          setOpen={setOpenStatus}
-          value={form.status}
-          setValue={val => handleChange('status', val)}
-          items={statusItems}
-          zIndex={2000}
-          zIndexInverse={1000}
-        />
-
-        <View style={styles.buttonWrapper}>
-          <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-            <Text style={styles.buttonText}>Cancel</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.button} onPress={handleSave}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
-          </TouchableOpacity>
-        </View>
-        <View style={{ height: 20 }} />
+        </ScrollView>
       </View>
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -242,26 +275,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.violet600,
   },
-  header: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.violet600,
-    padding: 32,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  loading: {
-    backgroundColor: theme.colors.violet100,
+  loadingContainer: {
     flex: 1,
+    backgroundColor: theme.colors.violet600,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: {
-    padding: 20,
-    paddingTop: 40,
+  contentWrapper: {
+    flex: 1,
     backgroundColor: theme.colors.violet100,
     borderTopLeftRadius: 60,
     borderTopRightRadius: 60,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   label: {
     fontWeight: 'bold',
@@ -274,6 +306,17 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     fontSize: 16,
+    color: '#000', // Ensure text is visible
+  },
+  dropdown: {
+    backgroundColor: '#fff',
+    borderColor: '#ddd',
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  dropdownContainer: {
+    backgroundColor: '#fff',
+    borderColor: '#ddd',
   },
   dateWrapper: {
     flexDirection: 'row',
@@ -286,12 +329,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     justifyContent: 'center',
+    marginTop: 30,
   },
   button: {
     backgroundColor: theme.colors.violet600,
     padding: 15,
     borderRadius: 30,
-    marginTop: 30,
     alignItems: 'center',
     minWidth: 100,
   },

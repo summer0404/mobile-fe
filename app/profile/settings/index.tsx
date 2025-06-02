@@ -52,19 +52,11 @@ const SettingsScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-primary">
-      <StatusBar barStyle={Platform.OS === 'ios' ? 'dark-content': 'light-content'} backgroundColor="#1A1A2E" />
-      <GoBackToHomeHeader title='Settings' />
-
-      {/* User profile picture part - Can be removed or replaced with a generic settings icon/header */}
-      {/* For simplicity, I'm omitting the avatar part from the profile page */}
-      {/* <View className='items-center justify-center pt-3 z-10'>
-         <View className="w-20 h-20 rounded-full bg-accent/30 justify-center items-center">
-            <MaterialCommunityIcons name="cog" size={40} className="text-accent" />
-          </View>
-      </View> */}
-
+      <StatusBar barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'} backgroundColor="#1A1A2E" />
+      <View className='p-6'>
+        <GoBackToHomeHeader title='Settings' />
+      </View>
       {/* Main Content Area */}
-      {/* Adjust pt-2 if avatar section is removed, or pt-2 -mt-10 if kept and overlapped */}
       <View className="flex-1 bg-primary-200 rounded-t-[70] pt-16">
         <ScrollView
           contentContainerStyle={{

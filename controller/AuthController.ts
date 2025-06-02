@@ -1,4 +1,4 @@
-// controller/DebtController.ts
+// controller/AuthController.ts
 import { ToastAndroid } from 'react-native';
 import { apiRequest } from '@/utils/commonUtil';
 import { URL_BACKEND } from '../constants';
@@ -8,11 +8,12 @@ export interface SignUpFormData {
     email: string,
     firstName: string,
     lastName: string,
-    password: string,
-    confirmPassword: string   
+    password: string,  
 }
 
+// Updated interface to include email
 export interface ChangePasswordFormData {
+    email: string,
     currentPassword: string,
     newPassword: string,
     confirmPassword: string
@@ -33,7 +34,7 @@ export const handleSignUp = async (
         // ToastAndroid.show('Debt added successfully!', ToastAndroid.SHORT);
         onSuccess();
     } catch (err) {
-        console.error('Error adding debt:', err);
+        console.error('Error signing up:', err);
         // ToastAndroid.show('Failed to add debt', ToastAndroid.SHORT);
         onError?.(err);
     }
@@ -41,6 +42,7 @@ export const handleSignUp = async (
 
 /**
  * Gửi yêu cầu thay đổi mật khẩu
+ * Now accepts email directly in the form data instead of from AsyncStorage
  */
 export const handleChangePassword = async (
     form: ChangePasswordFormData,
@@ -48,19 +50,12 @@ export const handleChangePassword = async (
     onError?: (err: any) => void
 ) => {
     try {
-        const userProfile = await getValueFromAsyncStorage('userProfile');
-
-        const bodyReq = {
-            ...form, 
-            email: userProfile.email
-        }
-        const response = await apiRequest(`${URL_BACKEND}/auth/change-password`, 'POST', bodyReq);
-        console.log('Add response:', response);
-        // ToastAndroid.show('Debt added successfully!', ToastAndroid.SHORT);
+        const response = await apiRequest(`${URL_BACKEND}/auth/change-password`, 'POST', form);
+        console.log('Change password response:', response);
+         console.log('Change password response:', form);
         onSuccess();
     } catch (err) {
-        console.error('Error adding debt:', err);
-        // ToastAndroid.show('Failed to add debt', ToastAndroid.SHORT);
+        console.error('Error changing password:', err);
         onError?.(err);
     }
 };

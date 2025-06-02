@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -10,9 +10,9 @@ import DateField from '@/components/addTransaction/DateField';
 import TransactionTypeToggle from '@/components/addTransaction/TransactionTypeToggle';
 import CategoryModal from '@/components/addTransaction/CategoryModal';
 import { Category, TransactionTypeId, TransactionItemData } from '@/components/addTransaction/types';
-import categoriesData from '@/constants/categories'; // Renamed for clarity
+import categoriesData from '@/constants/categories';
 import { updateTransaction, UpdateTransactionData, TransactionType as ApiTransactionType } from '@/services/transactionsService';
-import { getMe } from '@/services/authService';
+import CustomAlert from '@/components/Alert';
 
 const EditTransactionScreen = () => {
   const router = useRouter();
@@ -20,11 +20,12 @@ const EditTransactionScreen = () => {
   const [transaction, setTransaction] = useState<TransactionItemData | null>(null);
 
   // Form state
-  const [uiTransactionType, setUiTransactionType] = useState<TransactionTypeId>('expense'); // 'income' or 'expense' for UI toggle
+  const [uiTransactionType, setUiTransactionType] = useState<TransactionTypeId>('expense');
   const [date, setDate] = useState<Date>(new Date());
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null); // This holds {id, name, icon}
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [amount, setAmount] = useState<string>('');
-  const [detail, setDetail] = useState<string>(''); // Corresponds to 'detail'
+  const [detail, setDetail] = useState<string>('');
+  const [name, setName] = useState<string>('');
 
   // Modal and keyboard state
   const [isCategoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
@@ -34,34 +35,39 @@ const EditTransactionScreen = () => {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // useEffect(() => {
-  //   const fetchUserId = async () => {
-  //     setIsLoadingUserId(true);
-  //     const response = await getMe();
-  //     if (response.success && response.data?.id) {
-  //       setCurrentUserId(response.data.id);
-  //     } else {
-  //       Alert.alert("Error", "Could not load user information. Please try again.");
-  //       router.back(); // Or redirect to login
-  //     }
-  //     setIsLoadingUserId(false);
-  //   };
-  //   fetchUserId();
-  // }, [router]);
+  // CustomAlert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'warning'>('success');
+  const [alertOnConfirm, setAlertOnConfirm] = useState<(() => void) | undefined>(undefined);
+
+  const showCustomAlert = (
+    title: string, 
+    message: string, 
+    type: 'success' | 'error' | 'warning' = 'success',
+    onConfirm?: () => void
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertOnConfirm(() => onConfirm);
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     if (params.transactionData) {
       try {
         const parsedData = JSON.parse(params.transactionData) as TransactionItemData;
-        // Ensure dateObject is a Date instance
         if (parsedData.dateObject && typeof parsedData.dateObject === 'string') {
           parsedData.dateObject = new Date(parsedData.dateObject);
         }
         setTransaction(parsedData);
-        setUiTransactionType(parsedData.type); // UI type 'income' or 'expense'
+        setUiTransactionType(parsedData.type);
         setDate(new Date(parsedData.dateObject));
-        setAmount(String(Math.abs(parsedData.amountRaw))); // Edit absolute value
+        setAmount(String(Math.abs(parsedData.amountRaw)));
         setDetail(parsedData.detail || '');
+        setName(parsedData.title || '');
 
         if (parsedData.type === 'expense') {
             const categoryNameForLookup = parsedData.originalApiType;
@@ -75,16 +81,22 @@ const EditTransactionScreen = () => {
 
       } catch (e) {
         console.error("Failed to parse transactionData for edit:", e);
-        Alert.alert("Error", "Could not load transaction data for editing.");
-        router.back();
+        showCustomAlert(
+          "Error", 
+          "Could not load transaction data for editing.",
+          'error',
+          () => router.back()
+        );
       }
     } else if (params.id) {
-      // Fallback or if you fetch by ID (not implemented here, relies on transactionData)
-      Alert.alert("Error", "Transaction data not provided directly. Please ensure data is passed.");
-      router.back();
+      showCustomAlert(
+        "Error", 
+        "Transaction data not provided directly. Please ensure data is passed.",
+        'error',
+        () => router.back()
+      );
     }
   }, [params.id, params.transactionData, router]);
-
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -97,16 +109,20 @@ const EditTransactionScreen = () => {
 
   const handleUpdate = async () => {
     if (!transaction) {
-        Alert.alert("Error", "Transaction data is missing. Cannot update.");
+        showCustomAlert("Error", "Transaction data is missing. Cannot update.", 'error');
         return;
     }
 
     if (uiTransactionType === 'expense' && !selectedCategory) {
-      Alert.alert("Validation Error", "Please select a category for your expense.");
+      showCustomAlert("Validation Error", "Please select a category for your expense.", 'warning');
       return;
     }
     if (!amount) {
-      Alert.alert("Validation Error", "Please enter an amount.");
+      showCustomAlert("Validation Error", "Please enter an amount.", 'warning');
+      return;
+    }
+    if (!name.trim()) {
+      showCustomAlert("Validation Error", "Please enter a transaction name.", 'warning');
       return;
     }
 
@@ -115,17 +131,17 @@ const EditTransactionScreen = () => {
 
     const numericAmount = parseFloat(amount.replace(/[^0-9.]/g, ''));
     if (isNaN(numericAmount) || numericAmount <= 0) {
-      Alert.alert("Invalid Amount", "Please enter a valid positive amount.");
+      showCustomAlert("Invalid Amount", "Please enter a valid positive amount.", 'error');
       setIsUpdating(false);
       return;
     }
 
     const apiType: ApiTransactionType = uiTransactionType === 'income' ?
-      'income' : // Default 'income' type for API when UI tab is income
-      selectedCategory!.id as ApiTransactionType; // selectedCategory is guaranteed for expense by validation
+      'income' :
+      selectedCategory!.id as ApiTransactionType;
 
     const payload: UpdateTransactionData = {
-      name: transaction.title, // Or make name editable if needed
+      name: name.trim(),
       type: apiType,
       amount: numericAmount,
       detail: detail,
@@ -139,27 +155,48 @@ const EditTransactionScreen = () => {
     setIsUpdating(false);
 
     if (response.success && response.data) {
-      Alert.alert("Success", "Transaction updated successfully!");
-      router.back();
+      // Create updated transaction data for the detail screen
+      const updatedTransaction: TransactionItemData = {
+        ...transaction,
+        title: name.trim(),
+        detail: detail,
+        dateObject: date,
+        amountRaw: uiTransactionType === 'income' ? numericAmount : -numericAmount,
+        type: uiTransactionType,
+        originalApiType: apiType,
+        categoryDisplay: uiTransactionType === 'income' ? 'Income' : (selectedCategory?.name || 'Other'),
+      };
+
+      showCustomAlert(
+        "Success", 
+        "Transaction updated successfully!",
+        'success',
+        () => {
+          // Navigate back to detail screen with updated data
+          router.replace({
+            pathname: "/transaction/[id]",
+            params: { 
+              id: transaction.id, 
+              transactionData: JSON.stringify(updatedTransaction) 
+            },
+          });
+        }
+      );
     } else {
-      Alert.alert("Update Failed", response.message || response.error || "Could not update transaction.");
+      showCustomAlert(
+        "Update Failed", 
+        response.message || response.error || "Could not update transaction.",
+        'error'
+      );
     }
   };
 
   const handleCategorySelectFromModal = (category: Category) => {
     setSelectedCategory(category);
     setCategoryModalVisible(false);
-    // If the selected category implies a change in 'income' vs 'expense' for UI toggle:
-    // This depends on how your categories are structured.
-    // For example, if 'Salary' category is always 'income':
-    // if (category.name.toLowerCase() === 'salary' || category.name.toLowerCase() === 'income') { // Example
-    //   setUiTransactionType('income');
-    // } else {
-    //   setUiTransactionType('expense');
-    // }
   };
 
-  if ( !transaction) {
+  if (!transaction) {
     return (
       <SafeAreaView className="flex-1 bg-primary justify-center items-center">
         <ActivityIndicator size="large" color="#FFFFFF" />
@@ -192,7 +229,7 @@ const EditTransactionScreen = () => {
                 transactionType={uiTransactionType}
                 onTypeChange={(newType) => {
                   setUiTransactionType(newType);
-                  setSelectedCategory(null); // Clear category when type changes
+                  setSelectedCategory(null);
                 }}
               />
               <DateField
@@ -201,12 +238,20 @@ const EditTransactionScreen = () => {
                 onDateChange={setDate}
                 required
               />
+              <FormInput
+                label="Title"
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter transaction name..."
+                required
+                autoCapitalize="words"
+              />
               {uiTransactionType === 'expense' && (
                 <CategorySelector
                   label="Category"
                   selectedCategory={selectedCategory}
                   onOpenModal={() => setCategoryModalVisible(true)}
-                  suggestedCategories={categoriesData.suggestedCategoriesData} // Consider filtering these for expense
+                  suggestedCategories={categoriesData.suggestedCategoriesData}
                   onSuggestedSelect={setSelectedCategory}
                   required
                 />
@@ -216,7 +261,7 @@ const EditTransactionScreen = () => {
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="0"
-                formatAsCurrency={true} // Assuming your FormInput handles this
+                formatAsCurrency={true}
                 currencySymbol="$"
                 required
                 keyboardType="numeric"
@@ -236,6 +281,7 @@ const EditTransactionScreen = () => {
                 disabled={
                   (uiTransactionType === 'expense' && !selectedCategory) ||
                   !amount ||
+                  !name.trim() ||
                   isUpdating
                 }
                 style="mt-4"
@@ -247,10 +293,30 @@ const EditTransactionScreen = () => {
             onClose={() => setCategoryModalVisible(false)}
             allCategories={categoriesData.allCategoriesData}
             onSelectCategory={handleCategorySelectFromModal}
-            // currentTransactionType={uiTransactionType} // Pass this if modal needs to filter by type
           />
         </View>
       </KeyboardAvoidingView>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        isVisible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => {
+              setAlertVisible(false);
+              if (alertOnConfirm) {
+                alertOnConfirm();
+              }
+            },
+            style: alertType === 'error' ? 'destructive' : 'primary'
+          }
+        ]}
+        onDismiss={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };

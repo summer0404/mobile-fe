@@ -1,16 +1,18 @@
-import React, { useState } from 'react'; // Added useState
-import { View, Text, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'; // Added ActivityIndicator
+import React, { useState, useEffect } from 'react';
+import { View, Text, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import numeral from 'numeral';
 import { TransactionItemData } from '@/components/addTransaction/types';
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 import { deleteTransaction } from '@/services/transactionsService';
+import CustomAlert from '@/components/Alert';
 
 interface DetailItemProps {
   label: string;
   value: string | undefined;
   isLongText?: boolean;
 }
+
 const DetailItem: React.FC<DetailItemProps> = ({ label, value, isLongText = false }) => (
   <View className="mb-5">
     <Text className="text-sm font-pmedium text-black/70 mb-1.5">{label}</Text>
@@ -20,38 +22,68 @@ const DetailItem: React.FC<DetailItemProps> = ({ label, value, isLongText = fals
   </View>
 );
 
-
 const TransactionDetailScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string; transactionData?: string }>();
-  const [isDeleting, setIsDeleting] = useState(false); // State for delete operation
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [transaction, setTransaction] = useState<TransactionItemData | null>(null);
+  const [errorLoadingData, setErrorLoadingData] = useState(false);
 
-  let transaction: TransactionItemData | null = null;
-  let errorLoadingData = false;
+  // CustomAlert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  const [alertButtons, setAlertButtons] = useState<Array<{
+    text: string;
+    onPress: () => void;
+    style?: 'primary' | 'secondary' | 'destructive';
+  }>>([]);
 
-  if (params.transactionData) {
-    try {
-      const parsedData = JSON.parse(params.transactionData);
-      // Ensure dateObject is a Date instance if it was stringified
-      if (parsedData.dateObject && typeof parsedData.dateObject === 'string') {
-        parsedData.dateObject = new Date(parsedData.dateObject);
-      }
-      // Basic validation for essential fields (optional but good practice)
-      if (!parsedData.id || !parsedData.title || parsedData.amountRaw === undefined || !parsedData.dateObject) {
+  const showCustomAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    buttons: Array<{
+      text: string;
+      onPress: () => void;
+      style?: 'primary' | 'secondary' | 'destructive';
+    }> = []
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertButtons(buttons);
+    setAlertVisible(true);
+  };
+
+  // Load transaction data whenever params change
+  useEffect(() => {
+    if (params.transactionData) {
+      try {
+        const parsedData = JSON.parse(params.transactionData);
+        if (parsedData.dateObject && typeof parsedData.dateObject === 'string') {
+          parsedData.dateObject = new Date(parsedData.dateObject);
+        }
+        if (!parsedData.id || !parsedData.title || parsedData.amountRaw === undefined || !parsedData.dateObject) {
           console.error("Parsed transaction data is missing essential fields:", parsedData);
-          errorLoadingData = true;
-      } else {
-        transaction = parsedData as TransactionItemData;
+          setErrorLoadingData(true);
+          setTransaction(null);
+        } else {
+          setTransaction(parsedData as TransactionItemData);
+          setErrorLoadingData(false);
+        }
+      } catch (e) {
+        console.error("Failed to parse transactionData param:", e);
+        setErrorLoadingData(true);
+        setTransaction(null);
       }
-    } catch (e) {
-      console.error("Failed to parse transactionData param:", e);
-      errorLoadingData = true;
+    } else {
+      console.error("Transaction data not provided via navigation params.");
+      setErrorLoadingData(true);
+      setTransaction(null);
     }
-  } else {
-    // If transactionData is not provided, it's an error for the final product
-    console.error("Transaction data not provided via navigation params.");
-    errorLoadingData = true;
-  }
+  }, [params.transactionData]);
 
   if (errorLoadingData || !transaction) {
     return (
@@ -61,14 +93,12 @@ const TransactionDetailScreen = () => {
           {errorLoadingData ? "Could not load transaction details." : "Transaction not found."}
         </Text>
         <TouchableOpacity onPress={() => router.back()} className="mt-4 bg-accent py-3 px-6 rounded-lg">
-            <Text className="text-white font-psemibold">Go Back</Text>
+          <Text className="text-white font-psemibold">Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
-  // Proceed with rendering if transaction data is valid
-  const formattedAmount = numeral(transaction.amountRaw).format('$0,0.00');
   const formattedDate = transaction.dateObject.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -85,46 +115,88 @@ const TransactionDetailScreen = () => {
   };
 
   const handleDelete = () => {
-    // Ensure transaction is not null before trying to access its id
     if (!transaction) {
-        Alert.alert("Error", "Transaction data is not available.");
-        return;
+      showCustomAlert(
+        "Error",
+        "Transaction data is not available.",
+        'error',
+        [
+          {
+            text: 'OK',
+            onPress: () => setAlertVisible(false),
+            style: 'primary'
+          }
+        ]
+      );
+      return;
     }
-    Alert.alert(
+
+    showCustomAlert(
       "Delete Transaction",
       "Are you sure you want to delete this transaction? This action cannot be undone.",
+      'warning',
       [
-        { text: "Cancel", style: "cancel" },
         {
-          text: "Delete",
-          style: "destructive",
+          text: 'Cancel',
+          onPress: () => setAlertVisible(false),
+          style: 'secondary'
+        },
+        {
+          text: 'Delete',
           onPress: async () => {
-            if (!transaction) return; // Double check, though outer check should suffice
+            setAlertVisible(false);
+            if (!transaction) return;
+
             setIsDeleting(true);
             console.log('Attempting to delete transaction:', transaction.id);
-            
+
             const response = await deleteTransaction(transaction.id);
             setIsDeleting(false);
 
             if (response.success) {
-              Alert.alert("Success", "Transaction deleted successfully.");
-              router.back(); // Navigate back to the previous screen
+              showCustomAlert(
+                "Success",
+                "Transaction deleted successfully.",
+                'success',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      setAlertVisible(false);
+                      router.back();
+                    },
+                    style: 'primary'
+                  }
+                ]
+              );
             } else {
-              Alert.alert("Delete Failed", response.message || response.error || "Could not delete transaction.");
+              showCustomAlert(
+                "Delete Failed",
+                response.message || response.error || "Could not delete transaction.",
+                'error',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => setAlertVisible(false),
+                    style: 'primary'
+                  }
+                ]
+              );
             }
           },
-        },
+          style: 'destructive'
+        }
       ]
     );
   };
 
   return (
     <SafeAreaView className="flex-1 bg-primary">
-      <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle="light-content" />
-
-      <GoBackToHomeHeader title='Transaction Detail' />
-
+      {/* <Stack.Screen options={{ headerShown: false }} /> */}
+      <StatusBar />
+      <View className="p-6">
+        <GoBackToHomeHeader title='Transaction Detail' />
+      </View>
       <View className="flex-1 bg-primary-200 rounded-t-[30px] pt-8">
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 150 }}
@@ -134,9 +206,8 @@ const TransactionDetailScreen = () => {
             <Text className="text-base font-pmedium text-black capitalize">
               {transaction.type}
             </Text>
-            <Text className={`text-4xl font-pbold mt-1 ${
-                transaction.type === 'income' ? 'text-green-500' : 'text-red-500' // Consistent with other screens
-            }`}>
+            <Text className={`text-4xl font-pbold mt-1 ${transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+              }`}>
               {transaction.amountRaw >= 0 ? '+' : '-'}{numeral(Math.abs(transaction.amountRaw)).format('$0,0.00')}
             </Text>
           </View>
@@ -145,23 +216,22 @@ const TransactionDetailScreen = () => {
           <DetailItem label="Detail" value={transaction.detail} isLongText={!!transaction.detail && transaction.detail.length > 50} />
           <DetailItem label="Transaction Date" value={formattedDate} />
           <DetailItem label="Category" value={transaction.categoryDisplay} />
-
         </ScrollView>
       </View>
 
       <View className="absolute bottom-0 left-0 right-0">
-        <View className="px-6 pb-4 pt-2  flex-row justify-around items-center">
+        <View className="px-6 pb-4 pt-2 flex-row justify-around items-center">
           <TouchableOpacity
             onPress={handleEdit}
             className="bg-primary flex-1 py-3.5 rounded-full items-center mr-2 shadow"
-            disabled={isDeleting} // Disable edit button while deleting
+            disabled={isDeleting}
           >
             <Text className="text-white font-psemibold text-base">Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleDelete}
             className={`bg-red-600 flex-1 py-3.5 rounded-full items-center ml-2 shadow ${isDeleting ? 'opacity-50' : ''}`}
-            disabled={isDeleting} // Disable delete button while deleting
+            disabled={isDeleting}
           >
             {isDeleting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
@@ -171,6 +241,16 @@ const TransactionDetailScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        isVisible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        buttons={alertButtons}
+        onDismiss={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };

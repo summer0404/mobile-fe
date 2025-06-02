@@ -14,6 +14,13 @@ const formatCurrency = (amount: number) => {
     return `${sign}$${absAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
 };
 
+// Helper to get current month name
+const getCurrentMonthName = () => {
+    const months = ["January", "February", "March", "April", "May", "June", 
+                   "July", "August", "September", "October", "November", "December"];
+    return months[new Date().getMonth()];
+};
+
 const HomeOverview = () => {
     const router = useRouter();
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -25,6 +32,7 @@ const HomeOverview = () => {
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [target, setTarget] = useState(0);
+
     // Fetch User ID
     useEffect(() => {
         const fetchUser = async () => {
@@ -33,7 +41,7 @@ const HomeOverview = () => {
                 const response = await getMe();
                 if (response.success && response.data?.id) {
                     setCurrentUserId(response.data.id);
-                    setTarget(Number(response.data.target))
+                    setTarget(Number(response.data.target) || 0);
                 } else {
                     if ((response as any).status === 401 || response.message?.toLowerCase().includes('unauthorized')) {
                         router.replace('/auth/signIn');
@@ -70,7 +78,6 @@ const HomeOverview = () => {
 
         try {
             const params: GetAllTransactionsParams = {
-                // userId: currentUserId,
                 createFrom: startDate.getTime().toString(),
                 createTo: endDate.getTime().toString(),
                 limit: 10000,
@@ -94,16 +101,22 @@ const HomeOverview = () => {
             let expensesThisMonth = 0;
 
             transactions.forEach(t => {
-                const amount = parseFloat(String(t.amount) || '0');
-                if (t.type === 'income' || t.type === 'lend') {
+                const amount = Math.abs(parseFloat(String(t.amount) || '0'));
+                
+                if (t.type === 'income') {
+                    // Only actual income counts as income
                     incomeThisMonth += amount;
-                } else {
-                    expensesThisMonth += Math.abs(amount);
+                } else if (t.type !== 'lend' && t.type !== 'borrow') {
+                    // All transaction types except income, lend, and borrow are expenses
+                    // This includes: food, transportation, entertainment, shopping, etc.
+                    expensesThisMonth += amount;
                 }
+                // Exclude 'lend' and 'borrow' from both income and expense calculations
             });
 
             setTotalMonthlyIncome(incomeThisMonth);
             setTotalMonthlyExpenses(expensesThisMonth);
+            // Net balance = income - expenses (excluding lend/borrow)
             setTotalBalance(incomeThisMonth - expensesThisMonth);
 
         } catch (e: any) {
@@ -129,7 +142,8 @@ const HomeOverview = () => {
         }, [currentUserId, fetchMonthlyOverview])
     );
 
-    const expensePercentage = totalMonthlyIncome > 0 ? (totalMonthlyExpenses / target) * 100 : 0;
+    // Calculate expense percentage based on target (if target exists)
+    const expensePercentage = target > 0 ? (totalMonthlyExpenses / target) * 100 : 0;
 
     if (isLoadingUserId) {
         return (
@@ -149,29 +163,34 @@ const HomeOverview = () => {
 
     return (
         <>
+            {/* Month indicator */}
+            <View className="items-center mb-2">
+                <Text className="text-sm text-white/80 font-pregular">
+                    {getCurrentMonthName()} {new Date().getFullYear()} Overview
+                </Text>
+            </View>
+
             <View className="flex-row justify-around items-center my-4">
                 <View className="items-center">
                     <View className="flex-row items-center">
                         <MaterialCommunityIcons name="arrow-top-right-bold-box-outline" size={24} color="white" />
-                        <Text className="text-xs text-white ml-1 font-pregular">Total Income</Text>
+                        <Text className="text-xs text-white ml-1 font-pregular">This Month Income</Text>
                     </View>
                     {isLoadingData ? (
                         <ActivityIndicator size="small" color="white" className="mt-1" />
                     ) : (
-                        <Text className="text-2xl font-pbold text-white mt-1">{formatCurrency(totalBalance)}</Text>
+                        <Text className="text-2xl font-pbold text-white mt-1">{formatCurrency(totalMonthlyIncome)}</Text>
                     )}
                 </View>
                 <View className="w-px h-12 bg-white/50" />
                 <View className="items-center">
                     <View className="flex-row items-center">
-                        {/* Using a common icon for expenses */}
                         <MaterialCommunityIcons name="arrow-bottom-left-bold-box-outline" size={24} color="white" />
-                        <Text className="text-xs text-white ml-1 font-pregular">Total Expense</Text>
+                        <Text className="text-xs text-white ml-1 font-pregular">This Month Expense</Text>
                     </View>
                     {isLoadingData ? (
                         <ActivityIndicator size="small" color="#FFD700" className="mt-1" />
                     ) : (
-                        // Assuming text-secondary is defined for expense color (e.g., yellow/orange)
                         <Text className="text-2xl font-pbold text-secondary mt-1">{formatCurrency(totalMonthlyExpenses)}</Text>
                     )}
                 </View>

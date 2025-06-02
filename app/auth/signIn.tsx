@@ -4,10 +4,8 @@ import { useState } from 'react';
 import { router, useRouter } from 'expo-router';
 import React from 'react';
 import { theme } from '../../utils/theme';
-import FacebookIcon from '../../assets/images/facebook.svg'
-import GoogleIcon from '../../assets/images/google.svg'
 import { logIn, LoginCredentials } from '@/services/authService';
-import CustomAlert, { AlertButton } from '@/components/Alert'; // Import AlertButton here
+import CustomAlert, { AlertButton } from '@/components/Alert';
 
 export default function SignIn() {
     const [email, setEmail] = useState('');
@@ -18,7 +16,7 @@ export default function SignIn() {
     const [alertConfig, setAlertConfig] = useState<{
         title: string;
         message: string;
-        buttons: AlertButton[]; // This will now use the imported AlertButton
+        buttons: AlertButton[];
         type: 'success' | 'error' | 'warning' | 'info';
     }>({
         title: '',
@@ -63,9 +61,10 @@ export default function SignIn() {
       console.log('Login successful:', response.message);
       router.replace('/home'); 
     } else {
+      // Show user-friendly error message
       setAlertConfig({
         title: "Login Failed",
-        message: response.message || response.error || 'Login failed. Please check your credentials.',
+        message: "Your email or password is not correct. Please check your credentials and try again.",
         buttons: [{ text: "OK", onPress: () => setAlertVisible(false), style: 'primary' }],
         type: 'error',
       });
@@ -73,14 +72,27 @@ export default function SignIn() {
     }
   };
 
-
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Welcome</Text>
 
             <View style={styles.subContainer}>
-                <AuthTextInput label="Email" value={email} onChangeText={setEmail} />
-                <AuthTextInput label="Password" value={password} onChangeText={setPassword} isPassword />
+                <AuthTextInput 
+                    label="Email" 
+                    value={email} 
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    textContentType="emailAddress"
+                />
+                <AuthTextInput 
+                    label="Password" 
+                    value={password} 
+                    onChangeText={setPassword} 
+                    isPassword 
+                    textContentType="password"
+                />
 
                 <TouchableOpacity
                     onPress={handleSignIn}
@@ -96,14 +108,8 @@ export default function SignIn() {
 
                 <Text style={styles.fingerprintText}>Use <Text style={{ color: 'orange' }}>Fingerprint</Text> To Access</Text>
 
-                <Text style={styles.orText}>or sign in with</Text>
-                <View style={styles.iconRow}>
-                    <FacebookIcon width={30} height={30} />
-                    <GoogleIcon width={30} height={30} />
-                </View>
-
                 <Text style={styles.switchText}>
-                    Don’t have an account? <Text style={styles.link} onPress={() => router.replace('/auth/signUp')}>Sign Up</Text>
+                    Don't have an account? <Text style={styles.link} onPress={() => router.replace('/auth/signUp')}>Sign Up</Text>
                 </Text>
             </View>
             <CustomAlert
@@ -158,8 +164,7 @@ const styles = StyleSheet.create({
         marginRight: 'auto',
     },
     buttonLoading: {
-        backgroundColor: '#cccccc', // A generic grey color
-        // Or use a grey from your theme if available, e.g., theme.colors.grey300
+        backgroundColor: '#cccccc',
     },
     secondaryButton: {
         backgroundColor: '#a370f7',
@@ -179,22 +184,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'Poppins-SemiBold',
     },
-    orText: {
-        textAlign: 'center',
-        marginVertical: 10,
-        color: '#555',
-        fontSize: 13,
-        fontFamily: 'Poppins-Light',
-    },
-    iconRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginBottom: 10,
-        gap: 10,
-    },
     switchText: {
         textAlign: 'center',
-        marginTop: 10,
+        marginTop: 20,
         color: '#666',
         fontSize: 13,
         fontFamily: 'Poppins-Light',

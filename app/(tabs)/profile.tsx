@@ -7,7 +7,6 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator, // Import ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,6 +14,7 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 import InitialsAvatar from '@/components/profile/InitialsAvatar';
 import { getMe, logOut } from '@/services/authService'; // Make sure logOut is imported
+import CustomAlert, { AlertButton } from '@/components/Alert';
 
 // Define a type for profile menu items
 interface ProfileMenuItem {
@@ -25,13 +25,32 @@ interface ProfileMenuItem {
   action?: () => void; // Action to perform (e.g., logout)
 }
 
-
 const Profile = () => {
   const router = useRouter();
   const [userFirstName, setUserFirstName] = useState<string | undefined>(undefined);
   const [userLastName, setUserLastName] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // CustomAlert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+
+  const showCustomAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    buttons: AlertButton[] = []
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertButtons(buttons);
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -46,7 +65,6 @@ const Profile = () => {
         setUserLastName(response.data.lastName);
       } else {
         setError(response.message || "Failed to load profile data.");
-        // Alert.alert("Error", response.message || "Could not load your profile. Please try again later.");
       }
       setIsLoading(false);
     };
@@ -59,11 +77,59 @@ const Profile = () => {
     const response = await logOut(); // Call the imported logOut function
     if (response.success) {
       console.log('Logout successful:', response.message);
-      router.replace('/auth/signIn'); // Navigate to sign-in screen
+      showCustomAlert(
+        'Logout Successful',
+        'You have been logged out successfully.',
+        'success',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setAlertVisible(false);
+              router.replace('/auth/signIn');
+            },
+            style: 'primary'
+          }
+        ]
+      );
     } else {
       console.error('Logout failed:', response.message, response.error);
-      Alert.alert("Logout Failed", response.message || response.error || "Could not log out. Please try again.");
+      showCustomAlert(
+        'Logout Failed',
+        response.message || response.error || "Could not log out. Please try again.",
+        'error',
+        [
+          {
+            text: 'OK',
+            onPress: () => setAlertVisible(false),
+            style: 'primary'
+          }
+        ]
+      );
     }
+  };
+
+  const confirmLogout = () => {
+    showCustomAlert(
+      'Confirm Logout',
+      'Are you sure you want to logout?',
+      'warning',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => setAlertVisible(false),
+          style: 'secondary'
+        },
+        {
+          text: 'Logout',
+          onPress: () => {
+            setAlertVisible(false);
+            handleLogout();
+          },
+          style: 'destructive'
+        }
+      ]
+    );
   };
 
   const profileMenuItems: ProfileMenuItem[] = [
@@ -73,7 +139,7 @@ const Profile = () => {
       id: 'logout',
       label: 'Logout',
       iconName: 'logout',
-      action: handleLogout, 
+      action: confirmLogout, // Changed to show confirmation first
     },
   ];
 
@@ -88,8 +154,9 @@ const Profile = () => {
   return (
     <SafeAreaView className="flex-1 bg-primary">
       <StatusBar />
-      <GoBackToHomeHeader title='Profile' />
-
+      <View className='p-6'>
+        <GoBackToHomeHeader title='Profile' />
+      </View>
       {/* User profile picture part */}
       <View className='items-center justify-center pt-3 z-10'>
         {isLoading ? (
@@ -135,6 +202,16 @@ const Profile = () => {
           ))}
         </ScrollView>
       </View>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        isVisible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        buttons={alertButtons}
+        onDismiss={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };

@@ -15,20 +15,27 @@ import {
 import {
     validatePassword,
     validateConfirmPassword,
+    validateEmail, // Add email validation import
 } from '@/utils/validates/auth.validate.config';
 
+// Update the form data interface to include email
+interface ExtendedChangePasswordFormData extends ChangePasswordFormData {
+    email: string;
+}
+
 export default function ChangePasswordScreen() {
-    const [form, setForm] = useState<ChangePasswordFormData>({
+    const [form, setForm] = useState<ExtendedChangePasswordFormData>({
+        email: '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
     });
 
-    const [errors, setErrors] = useState<Partial<Record<keyof ChangePasswordFormData, string>>>({});
+    const [errors, setErrors] = useState<Partial<Record<keyof ExtendedChangePasswordFormData, string>>>({});
 
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleInputChange = (key: keyof ChangePasswordFormData, value: string) => {
+    const handleInputChange = (key: keyof ExtendedChangePasswordFormData, value: string) => {
         setForm(prev => ({ ...prev, [key]: value }));
         setErrors(prev => ({ ...prev, [key]: '' }));
     };
@@ -40,21 +47,33 @@ export default function ChangePasswordScreen() {
             return;
         }
 
+        // Extract only the required fields for the change password function
+        const changePasswordData: ChangePasswordFormData = {
+            email: form.email,
+            currentPassword: form.currentPassword,
+            newPassword: form.newPassword,
+            confirmPassword: form.confirmPassword,
+        };
+
         handleChangePassword(
-            form,
+            changePasswordData,
             () => {
                 Alert.alert('Success', 'Change password successfully!', [
                     { text: 'OK', onPress: () => router.replace('/home') },
                 ]);
             },
             () => {
-                Alert.alert('Change password Failed', 'An error occurred while Change password');
+                Alert.alert('Change password Failed', 'An error occurred while changing password');
             }
         );
     };
 
-    function validateForm(form: ChangePasswordFormData) {
-        const newErrors: Partial<Record<keyof ChangePasswordFormData, string>> = {};
+    function validateForm(form: ExtendedChangePasswordFormData) {
+        const newErrors: Partial<Record<keyof ExtendedChangePasswordFormData, string>> = {};
+
+        // Validate email
+        const emailError = validateEmail(form.email);
+        if (emailError) newErrors.email = emailError;
 
         const currentPasswordError = validatePassword(form.currentPassword);
         if (currentPasswordError) newErrors.currentPassword = currentPasswordError;
@@ -80,7 +99,15 @@ export default function ChangePasswordScreen() {
 
             <View style={styles.content}>
                 <AuthTextInput
-                    label="Current Password"
+                    label="Email"
+                    value={form.email}
+                    onChangeText={(text) => handleInputChange('email', text)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    error={errors.email}
+                />
+                <AuthTextInput
+                    label="Current  skewbidu"
                     value={form.currentPassword}
                     onChangeText={(text) => handleInputChange('currentPassword', text)}
                     isPassword

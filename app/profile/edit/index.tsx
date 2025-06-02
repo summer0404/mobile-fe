@@ -8,23 +8,21 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    // Switch, // Import Switch - REMOVED
     Platform,
-    Alert,
     ActivityIndicator,
-    TextInput, // Added ActivityIndicator import
+    TextInput,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { getMe, UserProfile as ApiUserProfile, UpdateUserProfileData, updateUser } from '@/services/authService'; // Import updateUser and UpdateUserProfileData
-import FormInput from '@/components/addTransaction/FormInput'; // Re-use FormInput or create a dedicated ProfileFormInput
+import { getMe, UserProfile as ApiUserProfile, UpdateUserProfileData, updateUser } from '@/services/authService';
+import FormInput from '@/components/addTransaction/FormInput';
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader';
 import InitialsAvatar from '@/components/profile/InitialsAvatar';
+import CustomAlert, { AlertButton } from '@/components/Alert';
 
 interface UserProfileData extends Omit<ApiUserProfile, 'id' | 'createdAt' | 'target'> {
     id: string;
     password?: string;
     profilePictureUrl?: string | null;
-    // pushNotificationsEnabled: boolean; // REMOVED
     target?: string;
     createdAt?: string;
 }
@@ -36,19 +34,36 @@ const initialFormState: UserProfileData = {
     email: '',
     password: '',
     profilePictureUrl: null,
-    // pushNotificationsEnabled: true, // REMOVED
     target: '',
     createdAt: '',
 };
 
-
 const EditProfileScreen = () => {
     const router = useRouter();
     const [profileData, setProfileData] = useState<UserProfileData>(initialFormState);
-    const [isLoading, setIsLoading] = useState(true); // For initial data fetch
-    const [isSubmitting, setIsSubmitting] = useState(false); // For update submission
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // CustomAlert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState('');
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+
+    const showCustomAlert = (
+        title: string,
+        message: string,
+        type: 'success' | 'error' | 'warning' | 'info' = 'info',
+        buttons: AlertButton[] = []
+    ) => {
+        setAlertTitle(title);
+        setAlertMessage(message);
+        setAlertType(type);
+        setAlertButtons(buttons);
+        setAlertVisible(true);
+    };
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -64,7 +79,18 @@ const EditProfileScreen = () => {
                 if (typeof apiData.id === 'undefined') {
                     console.error("API response.data is missing 'id' field:", apiData);
                     setError('Received incomplete profile data from server (missing ID).');
-                    Alert.alert("Error", "Profile data from server is incomplete. Please try again.");
+                    showCustomAlert(
+                        "Error",
+                        "Profile data from server is incomplete. Please try again.",
+                        'error',
+                        [
+                            {
+                                text: 'OK',
+                                onPress: () => setAlertVisible(false),
+                                style: 'primary'
+                            }
+                        ]
+                    );
                     setIsLoading(false);
                     return;
                 }
@@ -89,7 +115,18 @@ const EditProfileScreen = () => {
                 }
                 console.error("Error fetching profile or invalid data:", errorMessage, "Full response:", response);
                 setError(errorMessage);
-                Alert.alert("Error", errorMessage + " Please try again.");
+                showCustomAlert(
+                    "Error",
+                    errorMessage + " Please try again.",
+                    'error',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => setAlertVisible(false),
+                            style: 'primary'
+                        }
+                    ]
+                );
             }
             setIsLoading(false);
         };
@@ -97,15 +134,24 @@ const EditProfileScreen = () => {
         fetchUserProfile();
     }, []);
 
-
-
     const handleInputChange = (field: keyof UserProfileData, value: string | boolean) => {
         setProfileData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleUpdateProfile = async () => {
         if (!profileData.id) {
-            Alert.alert("Error", "User ID is missing. Cannot update profile.");
+            showCustomAlert(
+                "Error",
+                "User ID is missing. Cannot update profile.",
+                'error',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => setAlertVisible(false),
+                        style: 'primary'
+                    }
+                ]
+            );
             return;
         }
         if (isSubmitting) return; // Prevent multiple submissions
@@ -120,11 +166,6 @@ const EditProfileScreen = () => {
             target: profileData.target,
         };
 
-        // Optional: Remove undefined fields if your backend prefers that for PATCH
-        // Object.keys(dataToUpdate).forEach(key =>
-        //   (dataToUpdate as any)[key] === undefined && delete (dataToUpdate as any)[key]
-        // );
-
         console.log("Attempting to update profile with:", dataToUpdate);
         const response = await updateUser(profileData.id, dataToUpdate);
         console.log("UpdateUser response:", JSON.stringify(response, null, 2));
@@ -132,8 +173,20 @@ const EditProfileScreen = () => {
         setIsSubmitting(false);
 
         if (response.success) {
-            Alert.alert("Success", response.message || "Profile updated successfully!");
-            // Optionally, update local state with response.data if it contains the full updated profile
+            showCustomAlert(
+                "Success",
+                response.message || "Profile updated successfully!",
+                'success',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => setAlertVisible(false),
+                        style: 'primary'
+                    }
+                ]
+            );
+            
+            // Update local state with response data
             if (response.data) {
                 setProfileData(prev => ({
                     ...prev,
@@ -145,13 +198,23 @@ const EditProfileScreen = () => {
                 }));
             } else {
                 // If no data in response, just clear password
-                 setProfileData(prev => ({ ...prev, password: '' }));
+                setProfileData(prev => ({ ...prev, password: '' }));
             }
-            // router.back(); // Optionally navigate back
         } else {
             const errorMessage = response.message || response.error || "Could not update profile. Please try again.";
             setError(errorMessage);
-            Alert.alert("Update Failed", errorMessage);
+            showCustomAlert(
+                "Update Failed",
+                errorMessage,
+                'error',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => setAlertVisible(false),
+                        style: 'primary'
+                    }
+                ]
+            );
         }
     };
 
@@ -167,10 +230,11 @@ const EditProfileScreen = () => {
     return (
         <SafeAreaView className="flex-1 bg-primary">
             <StatusBar />
-            <GoBackToHomeHeader title="Edit Profile" />
-
+            <View className="p-6">
+                <GoBackToHomeHeader title="Edit Profile" />
+            </View>
             <View className='items-center justify-center pt-3 z-10'>
-                <InitialsAvatar firstName={profileData.firstName} lastName={profileData.lastName} size={80} fontSize={30}/>
+                <InitialsAvatar firstName={profileData.firstName} lastName={profileData.lastName} size={80} fontSize={30} />
             </View>
             {/* Main Content Area with Form */}
             <View className="flex-1 bg-primary-200 rounded-t-[70] pt-2 -mt-10">
@@ -206,7 +270,7 @@ const EditProfileScreen = () => {
                         inputWrapperStyle="bg-white/70"
                         containerStyle="mb-4"
                     />
-            
+
                     {/* Display Target and CreatedAt if needed, likely non-editable */}
                     {profileData.target !== undefined && ( // Check for undefined to show even if empty string
                         <FormInput
@@ -219,7 +283,7 @@ const EditProfileScreen = () => {
                             containerStyle="mb-4"
                         />
                     )}
-        
+
                     <TouchableOpacity
                         onPress={handleUpdateProfile}
                         disabled={isSubmitting || isLoading}
@@ -235,6 +299,15 @@ const EditProfileScreen = () => {
                 </ScrollView>
             </View>
 
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                type={alertType}
+                buttons={alertButtons}
+                onDismiss={() => setAlertVisible(false)}
+            />
         </SafeAreaView>
     );
 };

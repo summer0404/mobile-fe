@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useRouter, useFocusEffect } from 'expo-router'
+import * as SplashScreen from 'expo-splash-screen'
 import HomeHeader from '../../components/HomeHeader'
 import HomeOverview from '@/components/HomeOverview'
 import HomeOverview2 from '@/components/HomeOverview2'
@@ -14,6 +15,9 @@ import { getMe } from '@/services/authService'
 import { getAllTransactions, Transaction as ApiTransaction, GetAllTransactionsParams, PaginatedTransactionsResponse } from '@/services/transactionsService'
 import { mapApiTransactionToHomeListItem, HomeTransactionListItem } from '@/utils/dataTransformers'
 import { handleFetchDebts } from '@/controller/DebtController'
+
+// Keep the splash screen visible while we fetch initial data
+SplashScreen.preventAutoHideAsync();
 
 // Define a more specific type for your debt items if not already globally available
 interface DebtItem {
@@ -29,7 +33,6 @@ interface DebtItem {
     detail?: string;
   };
 }
-
 
 const Home = () => {
   const filters = ['Daily', 'Weekly', 'Monthly'];
@@ -56,27 +59,33 @@ const Home = () => {
   const [debtDataError, setDebtDataError] = useState<string | null>(null);
   const [debtPaidPercentage, setDebtPaidPercentage] = useState(0);
 
+  // Track if initial critical data has loaded
+  const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
   // Fetch User information
   useEffect(() => {
     const fetchUserId = async () => {
       setIsLoadingUserId(true);
-      const response = await getMe();
-      if (response.success && response.data?.id) {
-        setCurrentUserId(response.data.id);
-        setFirstName(response.data.firstName || ''); // Ensure fallback for potentially null/undefined
-        setLastName(response.data.lastName || '');  // Ensure fallback
-      } else {
-        console.error("Home: Failed to fetch user Info:", response.message || response.error);
-        // Optionally, handle navigation to login if user fetch fails critically
-        // router.replace('/auth/signIn');
+      try {
+        const response = await getMe();
+        if (response.success && response.data?.id) {
+          setCurrentUserId(response.data.id);
+          setFirstName(response.data.firstName || '');
+          setLastName(response.data.lastName || '');
+        } else {
+          console.error("Home: Failed to fetch user Info:", response.message || response.error);
+          // If user fetch fails, still hide splash to show error state
+        }
+      } catch (error) {
+        console.error("Home: Error fetching user:", error);
+      } finally {
+        setIsLoadingUserId(false);
       }
-      setIsLoadingUserId(false);
     };
     fetchUserId();
-  }, [router]); // Added router to dependency array
+  }, [router]);
 
-  // Fetch Home Transactions (recent 3)
+  // Fetch Home Transactions (ensure we get 10 non-lend/borrow transactions)
   const fetchHomeTransactions = useCallback(async () => {
     if (!currentUserId) {
       setHomeApiTransactions([]);
@@ -87,31 +96,64 @@ const Home = () => {
     setIsLoadingTransactions(true);
     setTransactionsError(null);
 
-    const params: GetAllTransactionsParams = {
-      limit: 3, // Get the 3 most recent
-      sort: 'date:desc', // Sort by date descending
-    };
-
     try {
-      const response = await getAllTransactions(params);
-      if (response.success && response.data) {
-        if (response.data.items && Array.isArray(response.data.items)) {
-          setHomeApiTransactions(response.data.items);
-        } else {
-          console.warn("Home: Unexpected data format for home transactions, items missing or not an array:", response.data);
-          setHomeApiTransactions([]);
-          setTransactionsError("Unexpected data format for home transactions.");
+      const targetCount = 10; // We want 10 non-lend/borrow transactions
+      const maxAttempts = 3; // Prevent infinite loops
+      let allFetchedTransactions: ApiTransaction[] = [];
+      let filteredTransactions: ApiTransaction[] = [];
+      let currentLimit = 15; // Start with more than 10 to account for filtering
+      let attempts = 0;
+
+      while (filteredTransactions.length < targetCount && attempts < maxAttempts) {
+        attempts++;
+        console.log(`Home: Fetch attempt ${attempts}, trying to get ${currentLimit} transactions`);
+
+        const params: GetAllTransactionsParams = {
+          limit: currentLimit,
+          sort: 'date:desc',
+        };
+
+        const response = await getAllTransactions(params);
+        
+        if (!response.success || !response.data?.items) {
+          throw new Error(response.message || response.error || "Failed to fetch transactions");
         }
-      } else {
-        setTransactionsError(response.message || response.error || "Failed to fetch home transactions.");
-        setHomeApiTransactions([]);
+
+        const fetchedTransactions = response.data.items as ApiTransaction[];
+        
+        // Filter out lend/borrow transactions
+        const validTransactions = fetchedTransactions.filter(
+          transaction => transaction.type !== 'borrow' && transaction.type !== 'lend'
+        );
+
+        // Remove duplicates (in case of overlapping fetches)
+        const newTransactions = validTransactions.filter(
+          newTx => !allFetchedTransactions.some(existingTx => existingTx.id === newTx.id)
+        );
+
+        allFetchedTransactions = [...allFetchedTransactions, ...newTransactions];
+        filteredTransactions = allFetchedTransactions.slice(0, targetCount);
+
+        console.log(`Home: Attempt ${attempts} - Fetched: ${fetchedTransactions.length}, Valid: ${validTransactions.length}, Total filtered: ${filteredTransactions.length}`);
+
+        // If we have enough transactions or the API returned fewer than requested (end of data)
+        if (filteredTransactions.length >= targetCount || fetchedTransactions.length < currentLimit) {
+          break;
+        }
+
+        // Increase limit for next attempt to get more transactions
+        currentLimit += 10;
       }
+
+      console.log(`Home: Final result - ${filteredTransactions.length} transactions after ${attempts} attempts`);
+      setHomeApiTransactions(filteredTransactions);
+
     } catch (error: any) {
-        console.error("Home: Error fetching home transactions:", error);
-        setTransactionsError("Could not load recent transactions.");
-        setHomeApiTransactions([]);
+      console.error("Home: Error fetching home transactions:", error);
+      setTransactionsError("Could not load recent transactions.");
+      setHomeApiTransactions([]);
     } finally {
-        setIsLoadingTransactions(false);
+      setIsLoadingTransactions(false);
     }
   }, [currentUserId]);
 
@@ -141,13 +183,12 @@ const Home = () => {
     try {
       const incomeParams: GetAllTransactionsParams = {
         type: 'income',
-        limit: 10000, // Consider if a smaller limit or date range is more appropriate
+        limit: 10000,
         createFrom: mondayTimestamp.toString(),
       };
       const incomeResponse = await getAllTransactions(incomeParams);
 
       if (!incomeResponse.success) {
-  
         console.warn("Home: Failed to fetch income for overview:", incomeResponse.message || incomeResponse.error);
       } else if (incomeResponse.data?.items) {
         calculatedRevenue = incomeResponse.data.items.reduce((sum, transaction) => {
@@ -157,7 +198,7 @@ const Home = () => {
 
       const foodParams: GetAllTransactionsParams = {
         type: 'food',
-        limit: 10000, // Consider if a smaller limit or date range is more appropriate
+        limit: 10000,
       };
       const foodResponse = await getAllTransactions(foodParams);
 
@@ -181,7 +222,6 @@ const Home = () => {
       setIsLoadingOverviewData(false);
     }
   }, [currentUserId, router]);
-
 
   // Fetch Debt Data and Calculate Percentage
   const fetchDebtDataAndCalculatePercentage = useCallback(async () => {
@@ -239,13 +279,33 @@ const Home = () => {
     }
   }, [currentUserId, router]);
 
+  // Hide splash screen when essential data is loaded
+  useEffect(() => {
+    const checkIfDataLoaded = async () => {
+      // Wait for user data and at least one of the main data fetches to complete
+      const userLoaded = !isLoadingUserId;
+      const hasAttemptedDataFetch = !isLoadingTransactions && !isLoadingOverviewData && !isLoadingDebtData;
+      
+      if (userLoaded && hasAttemptedDataFetch && !isInitialDataLoaded) {
+        setIsInitialDataLoaded(true);
+        try {
+          await SplashScreen.hideAsync();
+          console.log('Splash screen hidden');
+        } catch (error) {
+          console.warn('Error hiding splash screen:', error);
+        }
+      }
+    };
+
+    checkIfDataLoaded();
+  }, [isLoadingUserId, isLoadingTransactions, isLoadingOverviewData, isLoadingDebtData, isInitialDataLoaded]);
 
   useFocusEffect(
     useCallback(() => {
       if (currentUserId) {
         fetchHomeTransactions();
         fetchFinancialOverview();
-        fetchDebtDataAndCalculatePercentage(); // Fetch debt data
+        fetchDebtDataAndCalculatePercentage();
       }
     }, [currentUserId, fetchHomeTransactions, fetchFinancialOverview, fetchDebtDataAndCalculatePercentage])
   );
@@ -254,7 +314,6 @@ const Home = () => {
     if (!Array.isArray(homeApiTransactions)) {
       return [];
     }
-    // Filter out 'borrow' and 'lend' types before mapping
     return homeApiTransactions
       .filter(transaction => transaction.type !== 'borrow' && transaction.type !== 'lend')
       .map(mapApiTransactionToHomeListItem);
@@ -264,8 +323,10 @@ const Home = () => {
     router.push('/transaction');
   };
 
-  // Combine loading states for a general "loading content" indicator if preferred
-  const isPageLoading = isLoadingUserId || isLoadingTransactions || isLoadingOverviewData || isLoadingDebtData;
+  // Don't render anything until splash is hidden
+  if (!isInitialDataLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaView className='flex-1 bg-primary'>
@@ -275,9 +336,9 @@ const Home = () => {
           <HomeHeader firstName={firstName} lastName={lastName}/>
           <HomeOverview />
         </View>
-        <View className="bg-primary-200 rounded-t-[50] mt-5 px-6 py-8 min-h-screen ">
-          {isLoadingOverviewData || isLoadingDebtData ? ( // Show loader for this specific component's data
-            <ActivityIndicator size="small" color="#1A1A2E" className="my-4 h-20" /> // Added h-20 for placeholder height
+        <View className="bg-primary-200 rounded-t-[50] mt-5 px-6 py-8 min-h-screen">
+          {isLoadingOverviewData || isLoadingDebtData ? (
+            <ActivityIndicator size="small" color="#1A1A2E" className="my-4 h-20" />
           ) : overviewDataError || debtDataError ? (
             <View className="my-4 p-3 bg-red-100 rounded-lg h-20 items-center justify-center">
                 <Text className="text-red-600 text-center text-xs">
@@ -288,10 +349,9 @@ const Home = () => {
             <HomeOverview2 
               revenue={revenue} 
               food={foodExpense} 
-              debtPercentage={debtPaidPercentage} // Pass the calculated percentage
+              debtPercentage={debtPaidPercentage}
             />
           )}
-          {/* <FilterButtons filters={filters} activeFilter={activeFilter} setActiveFilter={setActiveFilter} /> */}
 
           <TouchableOpacity
             onPress={handleGoToAllTransactions}
@@ -301,7 +361,7 @@ const Home = () => {
             <Text className="text-white font-psemibold ml-2">View All Transactions</Text>
           </TouchableOpacity>
 
-          {isLoadingTransactions ? ( // Keep specific loader for transaction list
+          {isLoadingTransactions ? (
             <ActivityIndicator size="large" color="#1A1A2E" className="my-4" />
           ) : transactionsError ? (
             <View className="my-4 p-4 bg-red-100 rounded-lg">

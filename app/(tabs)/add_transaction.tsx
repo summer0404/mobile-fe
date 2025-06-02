@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { useNavigation, useRouter } from 'expo-router';
 import GoBackToHomeHeader from '@/components/GoBackToHomeHeader'
@@ -14,6 +14,7 @@ import categories from '@/constants/categories';
 import numeral from 'numeral';
 import { createTransaction, CreateTransactionData, TransactionType as ApiTransactionType } from '@/services/transactionsService';
 import { getMe } from '@/services/authService';
+import CustomAlert, { AlertButton } from '@/components/Alert';
 
 const AddTransaction = () => {
   const router = useRouter();
@@ -21,14 +22,34 @@ const AddTransaction = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [amount, setAmount] = useState<string>('');
-  const [transactionNameInput, setTransactionNameInput] = useState<string>(''); // New state for transaction name
-  const [message, setMessage] = useState<string>(''); // This will now be just for 'detail'
+  const [transactionNameInput, setTransactionNameInput] = useState<string>('');
+  const [message, setMessage] = useState<string>('');
   const [isCategoryModalVisible, setCategoryModalVisible] = useState<boolean>(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [isLoadingUserId, setIsLoadingUserId] = useState(true);
   const navigation = useNavigation();
+
+  // CustomAlert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+
+  const showCustomAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    buttons: AlertButton[] = []
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertButtons(buttons);
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
@@ -45,7 +66,18 @@ const AddTransaction = () => {
         setCurrentUserId(response.data.id);
       } else {
         console.error("Failed to fetch user ID:", response.message || response.error);
-        Alert.alert("Error", "Could not fetch user information. Please try logging in again.");
+        showCustomAlert(
+          "Error",
+          "Could not fetch user information. Please try logging in again.",
+          'error',
+          [
+            {
+              text: 'OK',
+              onPress: () => setAlertVisible(false),
+              style: 'primary'
+            }
+          ]
+        );
       }
       setIsLoadingUserId(false);
     };
@@ -69,18 +101,52 @@ const AddTransaction = () => {
     if (isSaving || isLoadingUserId) return;
 
     if (!currentUserId) {
-      Alert.alert("Error", "User information is not available. Cannot save transaction.");
+      showCustomAlert(
+        "Error",
+        "User information is not available. Cannot save transaction.",
+        'error',
+        [
+          {
+            text: 'OK',
+            onPress: () => setAlertVisible(false),
+            style: 'primary'
+          }
+        ]
+      );
       return;
     }
 
     // Validation for new name field
     if (!transactionNameInput.trim()) {
-      Alert.alert("Validation Error", "Transaction name is required.");
+      showCustomAlert(
+        "Validation Error",
+        "Transaction name is required.",
+        'warning',
+        [
+          {
+            text: 'OK',
+            onPress: () => setAlertVisible(false),
+            style: 'primary'
+          }
+        ]
+      );
       return;
     }
+
     if (!amount || (transactionType !== 'income' && !selectedCategory)) {
-      Alert.alert("Validation Error", "Please fill in all required fields (Amount and Category for expenses).");
-      setIsSaving(false); // Ensure isSaving is reset if validation fails early
+      showCustomAlert(
+        "Validation Error",
+        "Please fill in all required fields (Amount and Category for expenses).",
+        'warning',
+        [
+          {
+            text: 'OK',
+            onPress: () => setAlertVisible(false),
+            style: 'primary'
+          }
+        ]
+      );
+      setIsSaving(false);
       return;
     }
 
@@ -89,19 +155,30 @@ const AddTransaction = () => {
     let apiType: ApiTransactionType;
     if (transactionType === 'income') {
       apiType = 'income';
-    } else if (selectedCategory?.id) { // Use selectedCategory.type for expense type
+    } else if (selectedCategory?.id) {
       apiType = selectedCategory.id as ApiTransactionType;
     } else {
-      Alert.alert("Error", "Category type is missing for expense.");
+      showCustomAlert(
+        "Error",
+        "Category type is missing for expense.",
+        'error',
+        [
+          {
+            text: 'OK',
+            onPress: () => setAlertVisible(false),
+            style: 'primary'
+          }
+        ]
+      );
       setIsSaving(false);
       return;
     }
 
     const transactionData: CreateTransactionData = {
-      name: transactionNameInput.trim(), // Use the new dedicated name state
+      name: transactionNameInput.trim(),
       type: apiType,
       amount: parseFloat(amount.replace(/,/g, '')),
-      detail: message.trim() || null, // 'message' state is now purely for detail
+      detail: message.trim() || null,
       date: date.toISOString(),
     };
 
@@ -113,21 +190,57 @@ const AddTransaction = () => {
 
       if (response.success && response.data) {
         Keyboard.dismiss();
-        Alert.alert("Success", response.message || "Transaction saved successfully!");
-        setAmount('');
-        setTransactionNameInput(''); // Reset new name field
-        setMessage('');
-        setSelectedCategory(null);
-        setDate(new Date());
-        setTransactionType('expense');
-        router.replace('/transaction');
+        showCustomAlert(
+          "Success",
+          response.message || "Transaction saved successfully!",
+          'success',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setAlertVisible(false);
+                // Reset form
+                setAmount('');
+                setTransactionNameInput('');
+                setMessage('');
+                setSelectedCategory(null);
+                setDate(new Date());
+                setTransactionType('expense');
+                router.replace('/transaction');
+              },
+              style: 'primary'
+            }
+          ]
+        );
       } else {
-        Alert.alert("Error Saving Transaction", response.message || response.error || "Could not save transaction. Please try again.");
+        showCustomAlert(
+          "Error Saving Transaction",
+          response.message || response.error || "Could not save transaction. Please try again.",
+          'error',
+          [
+            {
+              text: 'OK',
+              onPress: () => setAlertVisible(false),
+              style: 'primary'
+            }
+          ]
+        );
       }
     } catch (error) {
       setIsSaving(false);
       console.error("Save transaction error:", error);
-      Alert.alert("Error", "An unexpected error occurred while saving the transaction.");
+      showCustomAlert(
+        "Error",
+        "An unexpected error occurred while saving the transaction.",
+        'error',
+        [
+          {
+            text: 'OK',
+            onPress: () => setAlertVisible(false),
+            style: 'primary'
+          }
+        ]
+      );
     }
   };
 
@@ -186,13 +299,12 @@ const AddTransaction = () => {
                   required
                 />
               )}
-              {/* New FormInput for Transaction Name */}
               <FormInput
                 label="Transaction Name"
                 value={transactionNameInput}
                 onChangeText={setTransactionNameInput}
                 placeholder="Short name for the transaction"
-                required // Make it required
+                required
               />
               <FormInput
                 label="Amount"
@@ -204,13 +316,13 @@ const AddTransaction = () => {
                 required
               />
               <FormInput
-                label="Note (Optional)" // Changed label to indicate it's optional
+                label="Note (Optional)"
                 value={message}
                 onChangeText={setMessage}
                 placeholder="Enter any additional details..."
                 multiline
-                numberOfLines={3} // Reduced lines as it's now just for notes
-                inputWrapperStyle="h-24 items-start" // Adjusted height
+                numberOfLines={3}
+                inputWrapperStyle="h-24 items-start"
               />
               <PrimaryButton
                 title={isSaving ? "Saving..." : "Save"}
@@ -218,7 +330,7 @@ const AddTransaction = () => {
                 disabled={
                   isLoadingUserId ||
                   isSaving ||
-                  !transactionNameInput.trim() || // Add validation for new name field
+                  !transactionNameInput.trim() ||
                   (transactionType !== 'income' && !selectedCategory) ||
                   !amount ||
                   !currentUserId
@@ -237,6 +349,16 @@ const AddTransaction = () => {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        isVisible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        buttons={alertButtons}
+        onDismiss={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };

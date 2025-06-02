@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView
+} from 'react-native';
 import { router } from 'expo-router';
 import AuthTextInput from '../../components/AuthTextInput';
 import { theme } from '../../utils/theme';
-import FacebookIcon from '../../assets/images/facebook.svg';
-import GoogleIcon from '../../assets/images/google.svg';
 import { SignUpFormData, handleSignUp } from '@/controller/AuthController';
 import {
   validateEmail,
@@ -12,9 +18,19 @@ import {
   validatePassword,
   validateConfirmPassword,
 } from '../../utils/validates/auth.validate.config';
+import CustomAlert from '../../components/Alert';
 
-function validateForm(form: SignUpFormData) {
-  const newErrors: Partial<Record<keyof SignUpFormData, string>> = {};
+// Frontend form interface with confirm password
+interface SignUpFormUI {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  confirmPassword: string;
+}
+
+function validateForm(form: SignUpFormUI) {
+  const newErrors: Partial<Record<keyof SignUpFormUI, string>> = {};
 
   const emailError = validateEmail(form.email);
   if (emailError) newErrors.email = emailError;
@@ -34,8 +50,8 @@ function validateForm(form: SignUpFormData) {
   return newErrors;
 }
 
-export default function SignIn() {
-  const [form, setForm] = useState<SignUpFormData>({
+export default function SignUp() {
+  const [form, setForm] = useState<SignUpFormUI>({
     email: '',
     firstName: '',
     lastName: '',
@@ -43,9 +59,37 @@ export default function SignIn() {
     confirmPassword: '',
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof SignUpFormData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof SignUpFormUI, string>>>({});
 
-  const handleChange = (key: keyof SignUpFormData, value: string) => {
+  // CustomAlert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  const [alertButtons, setAlertButtons] = useState<Array<{
+    text: string;
+    onPress: () => void;
+    style?: 'primary' | 'secondary' | 'destructive';
+  }>>([]);
+
+  const showCustomAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    buttons: Array<{
+      text: string;
+      onPress: () => void;
+      style?: 'primary' | 'secondary' | 'destructive';
+    }> = []
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertButtons(buttons);
+    setAlertVisible(true);
+  };
+
+  const handleChange = (key: keyof SignUpFormUI, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
     setErrors(prev => ({ ...prev, [key]: '' }));
   };
@@ -57,76 +101,125 @@ export default function SignIn() {
       return;
     }
 
+    // Remove confirmPassword for API call - only send what API expects
+    const signUpData: Omit<SignUpFormData, 'confirmPassword'> = {
+      email: form.email,
+      firstName: form.firstName,
+      lastName: form.lastName,
+      password: form.password,
+    };
+
     handleSignUp(
-      form,
+      signUpData,
       () => {
-        Alert.alert('Success', 'Account created successfully!', [
-          { text: 'OK', onPress: () => router.replace('/home') },
-        ]);
+        showCustomAlert(
+          'Success',
+          'Account created successfully!',
+          'success',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setAlertVisible(false);
+                router.replace('/auth/signIn');
+              },
+              style: 'primary'
+            }
+          ]
+        );
       },
       () => {
-        Alert.alert('Registration Failed', 'An error occurred while creating account');
+        showCustomAlert(
+          'Registration Failed',
+          'An error occurred while creating account',
+          'error',
+          [
+            {
+              text: 'OK',
+              onPress: () => setAlertVisible(false),
+              style: 'primary'
+            }
+          ]
+        );
       }
     );
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <Text style={styles.title}>Create Account</Text>
 
       <View style={styles.subContainer}>
-        <AuthTextInput
-          label="Your email"
-          value={form.email}
-          onChangeText={val => handleChange('email', val)}
-          error={errors.email}
-        />
-        <AuthTextInput
-          label="Your first name"
-          value={form.firstName}
-          onChangeText={val => handleChange('firstName', val)}
-          error={errors.firstName}
-        />
-        <AuthTextInput
-          label="Your last name"
-          value={form.lastName}
-          onChangeText={val => handleChange('lastName', val)}
-          error={errors.lastName}
-        />
-        <AuthTextInput
-          label="Password"
-          value={form.password}
-          onChangeText={val => handleChange('password', val)}
-          isPassword
-          error={errors.password}
-        />
-        <AuthTextInput
-          label="Confirm Password"
-          value={form.confirmPassword}
-          onChangeText={val => handleChange('confirmPassword', val)}
-          isPassword
-          error={errors.confirmPassword}
-        />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <AuthTextInput
+            label="Your email"
+            value={form.email}
+            onChangeText={val => handleChange('email', val)}
+            error={errors.email}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <AuthTextInput
+            label="Your first name"
+            value={form.firstName}
+            onChangeText={val => handleChange('firstName', val)}
+            error={errors.firstName}
+            autoCapitalize="words"
+          />
+          <AuthTextInput
+            label="Your last name"
+            value={form.lastName}
+            onChangeText={val => handleChange('lastName', val)}
+            error={errors.lastName}
+            autoCapitalize="words"
+          />
+          <AuthTextInput
+            label="Password"
+            value={form.password}
+            onChangeText={val => handleChange('password', val)}
+            isPassword
+            error={errors.password}
+          />
+          <AuthTextInput
+            label="Confirm Password"
+            value={form.confirmPassword}
+            onChangeText={val => handleChange('confirmPassword', val)}
+            isPassword
+            error={errors.confirmPassword}
+          />
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Sign Up</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
 
-        <Text style={styles.orText}>or sign up with</Text>
-
-        <View style={styles.iconRow}>
-          <FacebookIcon width={30} height={30} />
-          <GoogleIcon width={30} height={30} />
-        </View>
-
-        <Text style={styles.switchText}>
-          Already have an account?{' '}
-          <Text style={styles.link} onPress={() => router.replace('/auth/signIn')}>
-            Sign In
+          <Text style={styles.switchText}>
+            Already have an account?{' '}
+            <Text style={styles.link} onPress={() => router.replace('/auth/signIn')}>
+              Sign In
+            </Text>
           </Text>
-        </Text>
+        </ScrollView>
       </View>
-    </View>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        isVisible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        buttons={alertButtons}
+        onDismiss={() => setAlertVisible(false)}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
@@ -141,17 +234,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     color: theme.colors.whiteText,
     textAlign: 'center',
+    paddingBottom: 20,
   },
   subContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '87%',
-    bottom: 0,
+    flex: 1,
     backgroundColor: theme.colors.violet100,
     borderTopLeftRadius: 60,
     borderTopRightRadius: 60,
     paddingHorizontal: 28,
     paddingTop: 30,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
   button: {
     backgroundColor: theme.colors.violet600,
@@ -159,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: 140,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
     alignSelf: 'center',
   },
   buttonText: {
@@ -167,24 +265,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     color: '#fff',
   },
-  orText: {
-    textAlign: 'center',
-    marginVertical: 10,
-    color: '#555',
-    fontSize: 13,
-    fontFamily: 'Poppins-Light',
-  },
-  iconRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 10,
-  },
   switchText: {
     textAlign: 'center',
     color: '#666',
     fontSize: 13,
     fontFamily: 'Poppins-Light',
+    marginTop: 20,
   },
   link: {
     color: '#6A0DAD',

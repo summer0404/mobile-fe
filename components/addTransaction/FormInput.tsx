@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TextInput, KeyboardTypeOptions, StyleProp, ViewStyle, TextStyle, Platform, TouchableOpacity } from 'react-native';
 import numeral from 'numeral';
-import { MaterialCommunityIcons } from '@expo/vector-icons'; // Import icons
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface FormInputProps {
   label: string;
@@ -18,9 +18,42 @@ interface FormInputProps {
   containerStyle?: string | StyleProp<ViewStyle>;
   formatAsCurrency?: boolean;
   currencySymbol?: string;
-  secureTextEntry?: boolean; // New prop for password hiding
-  rightIcon?: React.ComponentProps<typeof MaterialCommunityIcons>['name']; // Optional right icon
-  onRightIconPress?: () => void; // Optional handler for right icon press
+  secureTextEntry?: boolean;
+  rightIcon?: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  onRightIconPress?: () => void;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'; // Added autoCapitalize prop
+  autoCorrect?: boolean; // Added autoCorrect prop
+  autoComplete?: 
+    | 'additional-name'
+    | 'address-line1'
+    | 'address-line2'
+    | 'birthdate-day'
+    | 'birthdate-full'
+    | 'birthdate-month'
+    | 'birthdate-year'
+    | 'cc-csc'
+    | 'cc-exp'
+    | 'cc-exp-day'
+    | 'cc-exp-month'
+    | 'cc-exp-year'
+    | 'cc-number'
+    | 'country'
+    | 'current-password'
+    | 'email'
+    | 'family-name'
+    | 'given-name'
+    | 'honorific-prefix'
+    | 'honorific-suffix'
+    | 'name'
+    | 'new-password'
+    | 'off'
+    | 'one-time-code'
+    | 'organization'
+    | 'organization-title'
+    | 'postal-code'
+    | 'street-address'
+    | 'tel'
+    | 'username'; // Added autoComplete prop
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -37,14 +70,16 @@ const FormInput: React.FC<FormInputProps> = ({
   containerStyle = "",
   formatAsCurrency = false,
   currencySymbol = '',
-  secureTextEntry = false, // Default to false
+  secureTextEntry = false,
   rightIcon,
   onRightIconPress,
+  autoCapitalize = 'sentences', // Default to sentences
+  autoCorrect = true, // Default to true (changed from false)
+  autoComplete = 'off', // Default to off
 }) => {
 
   const handleTextChange = (text: string) => {
     if (formatAsCurrency) {
-      // Allow only numbers for currency, but keep the raw numeric string for onChangeText
       const numericValue = text.replace(/[^0-9]/g, '');
       onChangeText(numericValue);
     } else {
@@ -52,23 +87,23 @@ const FormInput: React.FC<FormInputProps> = ({
     }
   };
 
-  // Display value formatting for currency
   const displayValue = formatAsCurrency
     ? (value && value !== '' ? numeral(value).format('0,0') : '')
     : value;
 
-  // Base TextInput classes
   let baseTextInputClasses = "flex-1 text-black";
   if (multiline) {
-    // For multiline, allow text to wrap and potentially grow
-    baseTextInputClasses += " h-full"; // Ensure it takes available height if multiline
+    baseTextInputClasses += " h-full";
   }
-  // If there's a right icon, add some padding to the right of the text input
   if (rightIcon) {
-    baseTextInputClasses += " pr-2"; // Adjust padding as needed
+    baseTextInputClasses += " pr-2";
   }
 
   const combinedTextInputStyle = `${baseTextInputClasses} ${textInputStyle as string}`;
+
+  // Override autoCorrect and autoCapitalize for password fields
+  const finalAutoCorrect = secureTextEntry ? false : autoCorrect;
+  const finalAutoCapitalize = secureTextEntry ? 'none' : autoCapitalize;
 
   return (
     <View className={containerStyle as string}>
@@ -83,16 +118,17 @@ const FormInput: React.FC<FormInputProps> = ({
         <TextInput
           className={combinedTextInputStyle}
           placeholder={placeholder}
-          placeholderTextColor="#A0A0A0" // Softer placeholder color
+          placeholderTextColor="#A0A0A0"
           keyboardType={formatAsCurrency ? 'number-pad' : keyboardType}
-          value={displayValue} // Use displayValue for currency formatting
-          onChangeText={handleTextChange} // Use handleTextChange for raw value
+          value={displayValue}
+          onChangeText={handleTextChange}
           multiline={multiline}
           numberOfLines={Platform.OS === 'android' && multiline ? numberOfLines : undefined}
           textAlignVertical={multiline ? "top" : "center"}
-          secureTextEntry={secureTextEntry} // Apply secureTextEntry prop
-          autoCapitalize="none" // Good practice for passwords and emails
-          autoCorrect={false} // Good practice for passwords
+          secureTextEntry={secureTextEntry}
+          autoCapitalize={finalAutoCapitalize} // Use processed value
+          autoCorrect={finalAutoCorrect} // Use processed value
+          autoComplete={autoComplete} // Add autoComplete prop
         />
         {rightIcon && onRightIconPress && (
           <TouchableOpacity onPress={onRightIconPress} className="p-1">

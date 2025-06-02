@@ -16,20 +16,18 @@ const GoBackToHomeHeader = ({ title }: GoBackToHomeHeaderProps) => {
         if (canGoBack) {
             router.back();
         } else {
-            
             router.replace('/home'); 
         }
     };
 
     return (
-        <View className="flex-row justify-between items-center mb-6 mx-3 mt-3">
+        <View className="flex-row justify-between items-center mb-6 mx-2 mt-3">
             <TouchableOpacity onPress={handleBackPress}>
                 <Ionicons name="arrow-back" size={28} color="white" />
             </TouchableOpacity>
-            <Text className="text-lg font-pbold text-white">{title}</Text>
-            <TouchableOpacity onPress={() => console.log('Notifications Pressed')}>
-                <MaterialCommunityIcons name="bell-outline" size={28} color="white" />
-            </TouchableOpacity>
+            <Text className="text-lg font-pbold text-white flex-1 text-center">{title}</Text>
+            {/* Empty view to balance the layout */}
+            <View className="w-7" />
         </View>
     )
 }

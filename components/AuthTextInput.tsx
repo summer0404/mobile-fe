@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextInput, View, Text, StyleSheet, Pressable } from 'react-native';
+import { TextInput, View, Text, StyleSheet, Pressable, KeyboardTypeOptions } from 'react-native';
 import { theme } from '../utils/theme';
 import EyeOnIcon from '../assets/images/eye.svg';
 import EyeOffIcon from '../assets/images/eye-off.svg';
@@ -11,9 +11,55 @@ type Props = {
   onChangeText: (text: string) => void;
   isPassword?: boolean;
   error?: string;
+  keyboardType?: KeyboardTypeOptions; // Updated to use proper type
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'; // Added autoCapitalize prop
+  autoCorrect?: boolean; // Added autoCorrect prop
+  placeholder?: string; // Added placeholder prop
+  placeholderTextColor?: string; // Added placeholderTextColor prop
+  textContentType?: 
+    | 'none'
+    | 'URL'
+    | 'addressCity'
+    | 'addressCityAndState'
+    | 'addressState'
+    | 'countryName'
+    | 'creditCardNumber'
+    | 'emailAddress'
+    | 'familyName'
+    | 'fullStreetAddress'
+    | 'givenName'
+    | 'jobTitle'
+    | 'location'
+    | 'middleName'
+    | 'name'
+    | 'namePrefix'
+    | 'nameSuffix'
+    | 'nickname'
+    | 'organizationName'
+    | 'postalCode'
+    | 'streetAddressLine1'
+    | 'streetAddressLine2'
+    | 'sublocality'
+    | 'telephoneNumber'
+    | 'username'
+    | 'password'
+    | 'newPassword'
+    | 'oneTimeCode'; // Added textContentType prop
 };
 
-export default function AuthTextInput({ label, value, onChangeText, isPassword = false, error }: Props) {
+export default function AuthTextInput({ 
+  label, 
+  value, 
+  onChangeText, 
+  isPassword = false, 
+  error,
+  keyboardType = 'default',
+  autoCapitalize = 'sentences',
+  autoCorrect = false,
+  placeholder,
+  placeholderTextColor = "#999",
+  textContentType = 'none'
+}: Props) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const togglePasswordVisibility = () => setIsPasswordVisible(!isPasswordVisible);
 
@@ -28,12 +74,13 @@ export default function AuthTextInput({ label, value, onChangeText, isPassword =
           ]}
           value={value}
           onChangeText={onChangeText}
-          placeholder={`${label}`}
-          placeholderTextColor="#999"
+          placeholder={placeholder || label}
+          placeholderTextColor={placeholderTextColor}
           secureTextEntry={isPassword && !isPasswordVisible}
-          autoCorrect={false}
-          textContentType="oneTimeCode"
-          autoCapitalize="none"
+          autoCorrect={autoCorrect}
+          textContentType={isPassword ? (textContentType === 'none' ? 'password' : textContentType) : textContentType}
+          autoCapitalize={autoCapitalize}
+          keyboardType={keyboardType}
         />
         {isPassword && (
           <Pressable style={styles.icon} onPress={togglePasswordVisibility}>
@@ -66,6 +113,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     fontSize: 16,
+    color: '#000'
   },
   icon: {
     position: 'absolute',
