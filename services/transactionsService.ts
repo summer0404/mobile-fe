@@ -1,29 +1,31 @@
-import { authenticatedFetch, SessionExpiredError } from '@/utils/apiClient'; // Adjust path if needed
+import { authenticatedFetch, SessionExpiredError } from "@/utils/apiClient"; // Adjust path if needed
+import analytics from "@react-native-firebase/analytics";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BE_URL || 'http://localhost:3010/api/v1'; // Fallback
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_BE_URL || "http://localhost:3010/api/v1"; // Fallback
 
 export type TransactionType =
-  | 'income'
-  | 'education'
-  | 'food'
-  | 'transport'
-  | 'groceries'
-  | 'shopping'
-  | 'entertainment'
-  | 'beauty'
-  | 'health'
-  | 'vacation'
-  | 'bill'
-  | 'home'
-  | 'borrow'
-  | 'lend'
-  | 'other';
+  | "income"
+  | "education"
+  | "food"
+  | "transport"
+  | "groceries"
+  | "shopping"
+  | "entertainment"
+  | "beauty"
+  | "health"
+  | "vacation"
+  | "bill"
+  | "home"
+  | "borrow"
+  | "lend"
+  | "other";
 
 export interface Transaction {
   id: number | string;
   name: string;
   type: TransactionType;
-  amount: number; 
+  amount: number;
   detail?: string | null;
   date: string;
   createdAt?: string;
@@ -78,6 +80,11 @@ interface ApiResponse<T> {
 export const createTransaction = async (
   transactionData: CreateTransactionData
 ): Promise<ApiResponse<Transaction>> => {
+  analytics().logEvent("create_transaction", {
+    transactionType: transactionData.type,
+    transactionAmount: transactionData.amount,
+    transactionName: transactionData.name,
+  });
   const requestUrl = `${API_BASE_URL}/transactions`;
 
   try {
@@ -93,7 +100,9 @@ export const createTransaction = async (
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to create transaction: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to create transaction: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -111,13 +120,14 @@ export const createTransaction = async (
       const responseData = JSON.parse(responseText);
       return {
         success: true,
-        message: responseData.message || 'Transaction created successfully',
+        message: responseData.message || "Transaction created successfully",
         data: responseData.data || responseData,
       };
     } catch (jsonParseError) {
       return {
         success: false,
-        message: 'Failed to parse successful server response for create transaction.',
+        message:
+          "Failed to parse successful server response for create transaction.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
@@ -128,7 +138,7 @@ export const createTransaction = async (
     }
     return {
       success: false,
-      message: 'A network error occurred while creating the transaction.',
+      message: "A network error occurred while creating the transaction.",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -154,7 +164,7 @@ export interface GetAllTransactionsParams {
 export const getAllTransactions = async (
   params?: GetAllTransactionsParams
 ): Promise<ApiResponse<PaginatedTransactionsResponse>> => {
-  let queryString = '';
+  let queryString = "";
   if (params) {
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -179,7 +189,9 @@ export const getAllTransactions = async (
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to fetch transactions: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to fetch transactions: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -196,10 +208,15 @@ export const getAllTransactions = async (
     try {
       const parsedResponse = JSON.parse(responseText);
 
-      if (parsedResponse.data && Array.isArray(parsedResponse.data.items) && parsedResponse.data.meta) {
+      if (
+        parsedResponse.data &&
+        Array.isArray(parsedResponse.data.items) &&
+        parsedResponse.data.meta
+      ) {
         return {
           success: true,
-          message: parsedResponse.message || 'Transactions fetched successfully',
+          message:
+            parsedResponse.message || "Transactions fetched successfully",
           data: parsedResponse.data,
           currentPage: parsedResponse.data.meta.currentPage,
           totalPages: parsedResponse.data.meta.totalPages,
@@ -207,22 +224,24 @@ export const getAllTransactions = async (
         };
       } else if (Array.isArray(parsedResponse)) {
         return {
-            success: true,
-            message: 'Transactions fetched successfully (as direct array)',
-            data: { items: parsedResponse, meta: {} }
+          success: true,
+          message: "Transactions fetched successfully (as direct array)",
+          data: { items: parsedResponse, meta: {} },
         };
       } else {
         return {
           success: false,
-          message: 'Server response for transactions was not in the expected paginated format.',
-          error: 'Invalid data structure',
+          message:
+            "Server response for transactions was not in the expected paginated format.",
+          error: "Invalid data structure",
           rawErrorResponse: responseText.substring(0, 500),
         };
       }
     } catch (jsonParseError) {
       return {
         success: false,
-        message: 'Failed to parse successful server response for get all transactions.',
+        message:
+          "Failed to parse successful server response for get all transactions.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
@@ -233,7 +252,7 @@ export const getAllTransactions = async (
     }
     return {
       success: false,
-      message: 'A network error occurred while fetching transactions.',
+      message: "A network error occurred while fetching transactions.",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -246,7 +265,7 @@ export const getAllTransactions = async (
 export const getAllExpenseTransactions = async (
   params?: GetAllTransactionsParams
 ): Promise<ApiResponse<PaginatedTransactionsResponse>> => {
-  let queryString = '';
+  let queryString = "";
   if (params) {
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -271,7 +290,9 @@ export const getAllExpenseTransactions = async (
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to fetch expense transactions: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to fetch expense transactions: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -288,10 +309,16 @@ export const getAllExpenseTransactions = async (
     try {
       const parsedResponse = JSON.parse(responseText);
 
-      if (parsedResponse.data && Array.isArray(parsedResponse.data.items) && parsedResponse.data.meta) {
+      if (
+        parsedResponse.data &&
+        Array.isArray(parsedResponse.data.items) &&
+        parsedResponse.data.meta
+      ) {
         return {
           success: true,
-          message: parsedResponse.message || 'Expense transactions fetched successfully',
+          message:
+            parsedResponse.message ||
+            "Expense transactions fetched successfully",
           data: parsedResponse.data,
           currentPage: parsedResponse.data.meta.currentPage,
           totalPages: parsedResponse.data.meta.totalPages,
@@ -299,29 +326,34 @@ export const getAllExpenseTransactions = async (
         };
       } else if (Array.isArray(parsedResponse.data)) {
         return {
-            success: true,
-            message: parsedResponse.message || 'Expense transactions fetched successfully (as direct array in data field)',
-            data: { items: parsedResponse.data as Transaction[], meta: {} }
+          success: true,
+          message:
+            parsedResponse.message ||
+            "Expense transactions fetched successfully (as direct array in data field)",
+          data: { items: parsedResponse.data as Transaction[], meta: {} },
         };
       } else if (Array.isArray(parsedResponse)) {
         return {
-            success: true,
-            message: 'Expense transactions fetched successfully (as direct array)',
-            data: { items: parsedResponse as Transaction[], meta: {} }
+          success: true,
+          message:
+            "Expense transactions fetched successfully (as direct array)",
+          data: { items: parsedResponse as Transaction[], meta: {} },
         };
       }
       else {
         return {
           success: false,
-          message: 'Server response for expense transactions was not in the expected paginated format.',
-          error: 'Invalid data structure',
+          message:
+            "Server response for expense transactions was not in the expected paginated format.",
+          error: "Invalid data structure",
           rawErrorResponse: responseText.substring(0, 500),
         };
       }
     } catch (jsonParseError) {
       return {
         success: false,
-        message: 'Failed to parse successful server response for get all expense transactions.',
+        message:
+          "Failed to parse successful server response for get all expense transactions.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
@@ -332,7 +364,7 @@ export const getAllExpenseTransactions = async (
     }
     return {
       success: false,
-      message: 'A network error occurred while fetching expense transactions.',
+      message: "A network error occurred while fetching expense transactions.",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -361,7 +393,9 @@ export const updateTransaction = async (
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to update transaction: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to update transaction: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -379,13 +413,14 @@ export const updateTransaction = async (
       const responseData = JSON.parse(responseText);
       return {
         success: true,
-        message: responseData.message || 'Transaction updated successfully',
+        message: responseData.message || "Transaction updated successfully",
         data: responseData.data || responseData,
       };
     } catch (jsonParseError) {
       return {
         success: false,
-        message: 'Failed to parse successful server response for update transaction.',
+        message:
+          "Failed to parse successful server response for update transaction.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
@@ -396,7 +431,7 @@ export const updateTransaction = async (
     }
     return {
       success: false,
-      message: 'A network error occurred while updating the transaction.',
+      message: "A network error occurred while updating the transaction.",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -423,7 +458,9 @@ export const deleteTransaction = async (
         const errorData = JSON.parse(responseText);
         return {
           success: false,
-          message: errorData.message || `Failed to delete transaction: ${response.status}`,
+          message:
+            errorData.message ||
+            `Failed to delete transaction: ${response.status}`,
           error: errorData.error || errorData.message,
           rawErrorResponse: responseText.substring(0, 500),
         };
@@ -437,10 +474,10 @@ export const deleteTransaction = async (
       }
     }
 
-    if (response.status === 204 || responseText.trim() === '') {
+    if (response.status === 204 || responseText.trim() === "") {
       return {
         success: true,
-        message: 'Transaction deleted successfully',
+        message: "Transaction deleted successfully",
         data: null,
       };
     }
@@ -449,16 +486,24 @@ export const deleteTransaction = async (
       const responseData = JSON.parse(responseText);
       return {
         success: true,
-        message: responseData.message || 'Transaction deleted successfully',
+        message: responseData.message || "Transaction deleted successfully",
         data: null,
       };
     } catch (jsonParseError) {
-      if (responseText.toLowerCase().includes('ok') || responseText.toLowerCase().includes('success')) {
-        return { success: true, message: "Transaction deleted successfully (server response was not JSON)." };
+      if (
+        responseText.toLowerCase().includes("ok") ||
+        responseText.toLowerCase().includes("success")
+      ) {
+        return {
+          success: true,
+          message:
+            "Transaction deleted successfully (server response was not JSON).",
+        };
       }
       return {
         success: false,
-        message: 'Failed to parse successful server response for delete transaction.',
+        message:
+          "Failed to parse successful server response for delete transaction.",
         error: (jsonParseError as Error).message,
         rawErrorResponse: responseText.substring(0, 500),
       };
@@ -469,7 +514,7 @@ export const deleteTransaction = async (
     }
     return {
       success: false,
-      message: 'A network error occurred while deleting the transaction.',
+      message: "A network error occurred while deleting the transaction.",
       error: error instanceof Error ? error.message : String(error),
     };
   }

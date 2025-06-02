@@ -12,7 +12,8 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.summer04.Treazure"
+      "package": "com.summer04.Treazure",
+      "googleServicesFile": "./app/google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -29,7 +30,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#F4E6FF"
         }
-      ]
+      ],
+      ["@react-native-firebase/app"]
     ],
     "experiments": {
       "typedRoutes": true
