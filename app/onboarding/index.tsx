@@ -41,9 +41,38 @@ const slides = [
 
 const Onboarding = () => {
     const router = useRouter();
+
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [isLoading, setIsLoading] = useState(true); // NEW
     const flatListRef = useRef<FlatList>(null);
 
+    /* --- Check if user has opened the app before --- */
+    useEffect(() => {
+        (async () => {
+            try {
+                const alreadyLaunched = await AsyncStorage.getItem("alreadyLaunched");
+                console.log("Storage: ", alreadyLaunched);
+                if (alreadyLaunched) {
+                    router.replace("/auth/signIn"); // Skip onboarding
+                    return;
+                }
+            } finally {
+                setIsLoading(false); // Allow render
+            }
+        })();
+    }, []);
+
+    /* --- Animation offset for the coin --- */
+    const coinOffset = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        Animated.timing(coinOffset, {
+            toValue: currentIndex * 125,
+            duration: 400,
+            useNativeDriver: true,
+        }).start();
+    }, [currentIndex]);
+
+    /* --- Handlers --- */
     const handleNext = () => {
         if (currentIndex < slides.length - 1) {
             flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
@@ -56,22 +85,16 @@ const Onboarding = () => {
         }
     };
 
+    /* --- Render single slide --- */
     const renderItem = ({ item }: { item: (typeof slides)[0] }) => (
         <View style={styles.slide}>
             <Animated.Image
                 source={require("../../assets/images/coin-full.png")}
-                style={[
-                    styles.coinImage,
-                    {
-                        transform: [{ translateY: coinOffset }],
-                    },
-                ]}
+                style={[styles.coinImage, { transform: [{ translateY: coinOffset }] }]}
             />
-            <Image
-                source={require("../../assets/images/figure.png")}
-                style={styles.image}
-                resizeMode="contain"
-            />
+
+            <Image source={item.image} style={styles.image} resizeMode="contain" />
+
             <View style={styles.textWrapper}>
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.description}>{item.description}</Text>
@@ -79,10 +102,10 @@ const Onboarding = () => {
 
             {item.id === "3" && (
                 <TouchableOpacity
-                    onPress={() => {
-                        AsyncStorage.setItem("alreadyLaunched", "true");
-                        router.replace("/auth/signIn");
-                    }} // Chuyển hướng đến tabs sau khi hoàn thành
+                    onPress={async () => {
+                        await AsyncStorage.setItem("alreadyLaunched", "true");
+                        router.replace("/auth/signIn"); // Go to main flow
+                    }}
                     style={styles.ctaButton}
                 >
                     <Text style={styles.ctaText}>Become master at budgeting!</Text>
@@ -91,15 +114,10 @@ const Onboarding = () => {
         </View>
     );
 
-    const coinOffset = useRef(new Animated.Value(0)).current;
-    useEffect(() => {
-        Animated.timing(coinOffset, {
-            toValue: currentIndex * 125,
-            duration: 400,
-            useNativeDriver: true,
-        }).start();
-    }, [currentIndex]);
+    /* --- Wait for AsyncStorage check before rendering anything --- */
+    if (isLoading) return null;
 
+    /* --- Main render --- */
     return (
         <SafeAreaView style={styles.container}>
             <FlatList
@@ -117,6 +135,7 @@ const Onboarding = () => {
             />
 
             <View style={styles.bottomControls}>
+                {/* Prev arrow */}
                 {currentIndex > 0 ? (
                     <TouchableOpacity onPress={handlePrev} style={styles.arrowButton}>
                         <Text style={styles.arrowText}>{"<"}</Text>
@@ -125,6 +144,7 @@ const Onboarding = () => {
                     <View style={{ width: 48 }} />
                 )}
 
+                {/* Pagination dots */}
                 <View style={styles.pagination}>
                     {slides.map((_, i) => (
                         <View
@@ -137,6 +157,7 @@ const Onboarding = () => {
                     ))}
                 </View>
 
+                {/* Next arrow */}
                 {currentIndex < slides.length - 1 ? (
                     <TouchableOpacity onPress={handleNext} style={styles.arrowButton}>
                         <Text style={styles.arrowText}>{">"}</Text>
@@ -165,7 +186,6 @@ const styles = StyleSheet.create({
         position: "absolute",
         width: width,
         top: height * 0.5 - 250,
-        marginBottom: 20,
     },
     textWrapper: {
         position: "absolute",
