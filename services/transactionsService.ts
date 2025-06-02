@@ -80,11 +80,6 @@ interface ApiResponse<T> {
 export const createTransaction = async (
   transactionData: CreateTransactionData
 ): Promise<ApiResponse<Transaction>> => {
-  analytics().logEvent("create_transaction", {
-    transactionType: transactionData.type,
-    transactionAmount: transactionData.amount,
-    transactionName: transactionData.name,
-  });
   const requestUrl = `${API_BASE_URL}/transactions`;
   console.log(
     "[transactionsService] Creating transaction at:",
@@ -94,6 +89,11 @@ export const createTransaction = async (
   );
 
   try {
+    await analytics().logEvent("create_transaction", {
+      transactionType: transactionData.type,
+      transactionAmount: transactionData.amount,
+      transactionName: transactionData.name,
+    });
     const response = await authenticatedFetch(requestUrl, {
       // USE authenticatedFetch
       method: "POST",
@@ -212,6 +212,7 @@ export const getAllTransactions = async (
   );
 
   try {
+    await analytics().logEvent("get_all_transactions");
     const response = await authenticatedFetch(requestUrl, {
       // USE authenticatedFetch
       method: "GET",
@@ -344,6 +345,7 @@ export const getAllExpenseTransactions = async (
   );
 
   try {
+    await analytics().logEvent("get_all_expense_transactions");
     const response = await authenticatedFetch(requestUrl, {
       // USE authenticatedFetch
       method: "GET",
@@ -482,6 +484,12 @@ export const updateTransaction = async (
   );
 
   try {
+    await analytics().logEvent("update_transaction", {
+      transactionId: id,
+      transactionType: transactionData.type,
+      transactionAmount: transactionData.amount,
+      transactionName: transactionData.name,
+    });
     const response = await authenticatedFetch(requestUrl, {
       // USE authenticatedFetch
       method: "PATCH",
@@ -573,6 +581,9 @@ export const deleteTransaction = async (
   );
 
   try {
+    await analytics().logEvent("delete_transaction", {
+      transactionId: id,
+    });
     const response = await authenticatedFetch(requestUrl, {
       // USE authenticatedFetch
       method: "DELETE",
