@@ -1,10 +1,11 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Modal, RefreshControl } from 'react-native'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useRouter, useFocusEffect } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import HomeHeader from '../../components/HomeHeader'
 import HomeOverview from '@/components/HomeOverview'
 import HomeOverview2 from '@/components/HomeOverview2'
@@ -23,22 +24,153 @@ SplashScreen.preventAutoHideAsync();
 interface DebtItem {
   id: number | string;
   debtorName: string;
-  dueDate: string; 
+  dueDate: string;
   status: 'pending' | 'paid' | 'overdue';
-  transaction: { 
+  transaction: {
     date: string;
-    type: 'lend' | 'borrow' | string; 
+    type: 'lend' | 'borrow' | string;
     name: string;
-    amount: string; 
+    amount: string;
     detail?: string;
   };
 }
 
+// Target Setup Modal Component
+const TargetSetupModal = ({ visible, onClose, onGoToProfile }: {
+  visible: boolean;
+  onClose: () => void;
+  onGoToProfile: () => void;
+}) => {
+  return (
+    <Modal
+      transparent={true}
+      visible={visible}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+      }}>
+        <View style={{
+          backgroundColor: 'white',
+          borderRadius: 20,
+          padding: 24,
+          width: '100%',
+          maxWidth: 340,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+          elevation: 5,
+        }}>
+          {/* Icon */}
+          <View style={{
+            alignItems: 'center',
+            marginBottom: 20,
+          }}>
+            <View style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: '#f3f4f6',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 16,
+            }}>
+              <MaterialCommunityIcons name="target" size={40} color="#7c3aed" />
+            </View>
+          </View>
+
+          {/* Title */}
+          <Text style={{
+            fontSize: 20,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            color: '#1f2937',
+            marginBottom: 8,
+            fontFamily: 'Poppins-SemiBold',
+          }}>
+            Set Your Monthly Target
+          </Text>
+
+          {/* Description */}
+          <Text style={{
+            fontSize: 14,
+            textAlign: 'center',
+            color: '#6b7280',
+            lineHeight: 20,
+            marginBottom: 24,
+            fontFamily: 'Poppins-Regular',
+          }}>
+            Setting a monthly spending target helps you track your expenses and stay within budget. Let's set one up for better financial management!
+          </Text>
+
+          {/* Buttons */}
+          <View style={{
+            flexDirection: 'row',
+            gap: 12,
+          }}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: '#d1d5db',
+                backgroundColor: 'transparent',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{
+                color: '#6b7280',
+                fontWeight: '600',
+                fontSize: 14,
+                fontFamily: 'Poppins-Medium',
+              }}>
+                Later
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={onGoToProfile}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                backgroundColor: '#7c3aed',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{
+                color: 'white',
+                fontWeight: '600',
+                fontSize: 14,
+                fontFamily: 'Poppins-Medium',
+              }}>
+                Set Target
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 const Home = () => {
   const filters = ['Daily', 'Weekly', 'Monthly'];
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [target, setTarget] = useState<number | null>(null);
   const [isLoadingUserId, setIsLoadingUserId] = useState(true);
 
   const [homeApiTransactions, setHomeApiTransactions] = useState<ApiTransaction[]>([]);
@@ -62,6 +194,13 @@ const Home = () => {
   // Track if initial critical data has loaded
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
+  // Target Setup Modal state
+  const [showTargetModal, setShowTargetModal] = useState(false);
+  const [hasShownTargetModal, setHasShownTargetModal] = useState(false);
+
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
   // Fetch User information
   useEffect(() => {
     const fetchUserId = async () => {
@@ -72,9 +211,10 @@ const Home = () => {
           setCurrentUserId(response.data.id);
           setFirstName(response.data.firstName || '');
           setLastName(response.data.lastName || '');
+          const userTarget = Number(response.data.target) || 0;
+          setTarget(userTarget);
         } else {
           console.error("Home: Failed to fetch user Info:", response.message || response.error);
-          // If user fetch fails, still hide splash to show error state
         }
       } catch (error) {
         console.error("Home: Error fetching user:", error);
@@ -84,6 +224,19 @@ const Home = () => {
     };
     fetchUserId();
   }, [router]);
+
+  // Show target modal when target is 0 and data is loaded
+  useEffect(() => {
+    if (!isLoadingUserId && target === 0 && !hasShownTargetModal && isInitialDataLoaded) {
+      // Small delay to ensure the UI is fully rendered
+      const timer = setTimeout(() => {
+        setShowTargetModal(true);
+        setHasShownTargetModal(true);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingUserId, target, hasShownTargetModal, isInitialDataLoaded]);
 
   // Fetch Home Transactions (ensure we get 10 non-lend/borrow transactions)
   const fetchHomeTransactions = useCallback(async () => {
@@ -106,7 +259,6 @@ const Home = () => {
 
       while (filteredTransactions.length < targetCount && attempts < maxAttempts) {
         attempts++;
-        console.log(`Home: Fetch attempt ${attempts}, trying to get ${currentLimit} transactions`);
 
         const params: GetAllTransactionsParams = {
           limit: currentLimit,
@@ -114,13 +266,13 @@ const Home = () => {
         };
 
         const response = await getAllTransactions(params);
-        
+
         if (!response.success || !response.data?.items) {
           throw new Error(response.message || response.error || "Failed to fetch transactions");
         }
 
         const fetchedTransactions = response.data.items as ApiTransaction[];
-        
+
         // Filter out lend/borrow transactions
         const validTransactions = fetchedTransactions.filter(
           transaction => transaction.type !== 'borrow' && transaction.type !== 'lend'
@@ -134,8 +286,6 @@ const Home = () => {
         allFetchedTransactions = [...allFetchedTransactions, ...newTransactions];
         filteredTransactions = allFetchedTransactions.slice(0, targetCount);
 
-        console.log(`Home: Attempt ${attempts} - Fetched: ${fetchedTransactions.length}, Valid: ${validTransactions.length}, Total filtered: ${filteredTransactions.length}`);
-
         // If we have enough transactions or the API returned fewer than requested (end of data)
         if (filteredTransactions.length >= targetCount || fetchedTransactions.length < currentLimit) {
           break;
@@ -145,7 +295,6 @@ const Home = () => {
         currentLimit += 10;
       }
 
-      console.log(`Home: Final result - ${filteredTransactions.length} transactions after ${attempts} attempts`);
       setHomeApiTransactions(filteredTransactions);
 
     } catch (error: any) {
@@ -209,14 +358,14 @@ const Home = () => {
           return sum + Math.abs(parseFloat(String(transaction.amount) || '0'));
         }, 0);
       }
-      
+
       setRevenue(calculatedRevenue);
       setFoodExpense(calculatedFoodExpense);
 
     } catch (error: any) {
       console.error("Home: Error fetching financial overview data:", error);
       setOverviewDataError("Could not load financial overview.");
-      setRevenue(0); 
+      setRevenue(0);
       setFoodExpense(0);
     } finally {
       setIsLoadingOverviewData(false);
@@ -249,12 +398,12 @@ const Home = () => {
         const sumPendingBorrowDebtsAmount = borrowDebts
           .filter(debt => debt.status === 'pending')
           .reduce((sum, debt) => sum + parseFloat(debt.transaction?.amount || '0'), 0);
-        
+
         const totalRelevantBorrowDebtsAmount = sumPaidBorrowDebtsAmount + sumPendingBorrowDebtsAmount;
 
         if (totalRelevantBorrowDebtsAmount > 0) {
           const percentage = (sumPaidBorrowDebtsAmount / totalRelevantBorrowDebtsAmount) * 100;
-          setDebtPaidPercentage(Math.round(percentage)); 
+          setDebtPaidPercentage(Math.round(percentage));
         } else {
           setDebtPaidPercentage(100);
         }
@@ -279,18 +428,64 @@ const Home = () => {
     }
   }, [currentUserId, router]);
 
+  // Add a function to refresh user data
+  const refreshUserData = useCallback(async () => {
+    setIsLoadingUserId(true);
+    try {
+      const response = await getMe();
+      if (response.success && response.data?.id) {
+        setCurrentUserId(response.data.id);
+        setFirstName(response.data.firstName || '');
+        setLastName(response.data.lastName || '');
+        const userTarget = Number(response.data.target) || 0;
+        setTarget(userTarget);
+      }
+    } catch (error) {
+      console.error("Home: Error fetching user:", error);
+    } finally {
+      setIsLoadingUserId(false);
+    }
+  }, []);
+
+  // Refresh all data
+  const refreshAllData = useCallback(async () => {
+    if (!currentUserId) return;
+
+    // Clear any existing errors
+    setTransactionsError(null);
+    setOverviewDataError(null);
+    setDebtDataError(null);
+
+    // Fetch all data concurrently, including updated user data
+    await Promise.all([
+      refreshUserData(),
+      fetchHomeTransactions(),
+      fetchFinancialOverview(),
+      fetchDebtDataAndCalculatePercentage(),
+    ]);
+  }, [currentUserId, refreshUserData, fetchHomeTransactions, fetchFinancialOverview, fetchDebtDataAndCalculatePercentage]);
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshAllData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshAllData]);
+
   // Hide splash screen when essential data is loaded
   useEffect(() => {
     const checkIfDataLoaded = async () => {
       // Wait for user data and at least one of the main data fetches to complete
       const userLoaded = !isLoadingUserId;
       const hasAttemptedDataFetch = !isLoadingTransactions && !isLoadingOverviewData && !isLoadingDebtData;
-      
+
       if (userLoaded && hasAttemptedDataFetch && !isInitialDataLoaded) {
         setIsInitialDataLoaded(true);
         try {
           await SplashScreen.hideAsync();
-          console.log('Splash screen hidden');
         } catch (error) {
           console.warn('Error hiding splash screen:', error);
         }
@@ -303,11 +498,9 @@ const Home = () => {
   useFocusEffect(
     useCallback(() => {
       if (currentUserId) {
-        fetchHomeTransactions();
-        fetchFinancialOverview();
-        fetchDebtDataAndCalculatePercentage();
+        refreshAllData();
       }
-    }, [currentUserId, fetchHomeTransactions, fetchFinancialOverview, fetchDebtDataAndCalculatePercentage])
+    }, [currentUserId, refreshAllData])
   );
 
   const displayedHomeTransactions: HomeTransactionListItem[] = useMemo(() => {
@@ -323,6 +516,15 @@ const Home = () => {
     router.push('/transaction');
   };
 
+  const handleGoToProfile = () => {
+    setShowTargetModal(false);
+    router.push('/profile/edit');
+  };
+
+  const handleCloseModal = () => {
+    setShowTargetModal(false);
+  };
+
   // Don't render anything until splash is hidden
   if (!isInitialDataLoaded) {
     return null;
@@ -331,24 +533,41 @@ const Home = () => {
   return (
     <SafeAreaView className='flex-1 bg-primary'>
       <StatusBar />
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#7c3aed']} // Android
+            tintColor="#ffffff" // iOS
+            title="Pull to refresh" // iOS
+            titleColor="#ffffff" // iOS
+          />
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom  // Add bottom padding for tab bar
+        }}
+      >
         <View className="p-6">
-          <HomeHeader firstName={firstName} lastName={lastName}/>
-          <HomeOverview />
+          <HomeHeader firstName={firstName} lastName={lastName} />
+          <HomeOverview target={target === null ? undefined : target} onTargetUpdate={setTarget} />
         </View>
-        <View className="bg-primary-200 rounded-t-[50] mt-5 px-6 py-8 min-h-screen">
+        <View className="bg-primary-200 rounded-t-[50] mt-5 px-6 pt-8" style={{
+          paddingBottom: insets.bottom + 60 // 32 is py-8 (8 * 4 = 32px)
+        }}>
           {isLoadingOverviewData || isLoadingDebtData ? (
             <ActivityIndicator size="small" color="#1A1A2E" className="my-4 h-20" />
           ) : overviewDataError || debtDataError ? (
             <View className="my-4 p-3 bg-red-100 rounded-lg h-20 items-center justify-center">
-                <Text className="text-red-600 text-center text-xs">
-                    {overviewDataError || debtDataError || "Error loading overview."}
-                </Text>
+              <Text className="text-red-600 text-center text-xs">
+                {overviewDataError || debtDataError || "Error loading overview."}
+              </Text>
             </View>
           ) : (
-            <HomeOverview2 
-              revenue={revenue} 
-              food={foodExpense} 
+            <HomeOverview2
+              revenue={revenue}
+              food={foodExpense}
               debtPercentage={debtPaidPercentage}
             />
           )}
@@ -377,6 +596,13 @@ const Home = () => {
           )}
         </View>
       </ScrollView>
+
+      {/* Target Setup Modal */}
+      <TargetSetupModal
+        visible={showTargetModal}
+        onClose={handleCloseModal}
+        onGoToProfile={handleGoToProfile}
+      />
     </SafeAreaView>
   )
 }

@@ -21,7 +21,13 @@ const getCurrentMonthName = () => {
     return months[new Date().getMonth()];
 };
 
-const HomeOverview = () => {
+// Update HomeOverview to accept target as prop
+interface HomeOverviewProps {
+  target?: number;
+  onTargetUpdate?: (newTarget: number) => void;
+}
+
+const HomeOverview: React.FC<HomeOverviewProps> = ({ target: propTarget, onTargetUpdate }) => {
     const router = useRouter();
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [isLoadingUserId, setIsLoadingUserId] = useState(true);
@@ -31,9 +37,12 @@ const HomeOverview = () => {
     const [totalMonthlyExpenses, setTotalMonthlyExpenses] = useState(0);
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [target, setTarget] = useState(0);
+    
+    // Use prop target if available, otherwise fetch it
+    const [localTarget, setLocalTarget] = useState(0);
+    const target = propTarget !== undefined ? propTarget : localTarget;
 
-    // Fetch User ID
+    // Fetch User ID (remove target fetching since it's passed as prop)
     useEffect(() => {
         const fetchUser = async () => {
             setIsLoadingUserId(true);
@@ -41,7 +50,12 @@ const HomeOverview = () => {
                 const response = await getMe();
                 if (response.success && response.data?.id) {
                     setCurrentUserId(response.data.id);
-                    setTarget(Number(response.data.target) || 0);
+                    // Only set local target if no prop target is provided
+                    if (propTarget === undefined) {
+                        const userTarget = Number(response.data.target) || 0;
+                        setLocalTarget(userTarget);
+                        onTargetUpdate?.(userTarget);
+                    }
                 } else {
                     if ((response as any).status === 401 || response.message?.toLowerCase().includes('unauthorized')) {
                         router.replace('/auth/signIn');
@@ -62,7 +76,7 @@ const HomeOverview = () => {
             }
         };
         fetchUser();
-    }, [router]);
+    }, [router, propTarget, onTargetUpdate]);
 
     const fetchMonthlyOverview = useCallback(async () => {
         if (!currentUserId) return;
