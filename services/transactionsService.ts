@@ -80,14 +80,14 @@ interface ApiResponse<T> {
 export const createTransaction = async (
   transactionData: CreateTransactionData
 ): Promise<ApiResponse<Transaction>> => {
-  analytics().logEvent("create_transaction", {
-    transactionType: transactionData.type,
-    transactionAmount: transactionData.amount,
-    transactionName: transactionData.name,
-  });
   const requestUrl = `${API_BASE_URL}/transactions`;
 
   try {
+    await analytics().logEvent("create_transaction", {
+      transactionType: transactionData.type,
+      transactionAmount: transactionData.amount,
+      transactionName: transactionData.name,
+    });
     const response = await authenticatedFetch(requestUrl, {
       method: 'POST',
       body: JSON.stringify(transactionData),
@@ -178,6 +178,7 @@ export const getAllTransactions = async (
   const requestUrl = `${API_BASE_URL}/transactions${queryString ? `?${queryString}` : ''}`;
 
   try {
+    await analytics().logEvent("get_all_transactions");
     const response = await authenticatedFetch(requestUrl, {
       method: 'GET',
     });
@@ -279,6 +280,7 @@ export const getAllExpenseTransactions = async (
   const requestUrl = `${API_BASE_URL}/transactions/expenses${queryString ? `?${queryString}` : ''}`;
 
   try {
+    await analytics().logEvent("get_all_expense_transactions");
     const response = await authenticatedFetch(requestUrl, {
       method: 'GET',
     });
@@ -381,6 +383,12 @@ export const updateTransaction = async (
   const requestUrl = `${API_BASE_URL}/transactions/${id}`;
 
   try {
+    await analytics().logEvent("update_transaction", {
+      transactionId: id,
+      transactionType: transactionData.type,
+      transactionAmount: transactionData.amount,
+      transactionName: transactionData.name,
+    });
     const response = await authenticatedFetch(requestUrl, {
       method: 'PATCH',
       body: JSON.stringify(transactionData),
@@ -447,6 +455,9 @@ export const deleteTransaction = async (
   const requestUrl = `${API_BASE_URL}/transactions/${id}`;
 
   try {
+    await analytics().logEvent("delete_transaction", {
+      transactionId: id,
+    });
     const response = await authenticatedFetch(requestUrl, {
       method: 'DELETE',
     });
