@@ -72,6 +72,10 @@ export default function SignIn() {
     }
   };
 
+  const handleForgotPassword = () => {
+    router.push('/profile/change-password');
+  };
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Welcome</Text>
@@ -102,11 +106,11 @@ export default function SignIn() {
                     <Text style={styles.buttonText}>{isLoading ? "Signing In..." : "Sign In"}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleForgotPassword}>
                     <Text style={styles.link}>Forgot Password?</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.fingerprintText}>Use <Text style={{ color: 'orange' }}>Fingerprint</Text> To Access</Text>
+                {/* <Text style={styles.fingerprintText}>Use <Text style={{ color: 'orange' }}>Fingerprint</Text> To Access</Text> */}
 
                 <Text style={styles.switchText}>
                     Don't have an account? <Text style={styles.link} onPress={() => router.replace('/auth/signUp')}>Sign Up</Text>
