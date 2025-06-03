@@ -31,7 +31,9 @@
           "backgroundColor": "#F4E6FF"
         }
       ],
-      ["@react-native-firebase/app"]
+      [
+        "@react-native-firebase/app"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -49,7 +51,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/554e99f8-c566-4731-a49b-5f71aa0f9288"
+      "url": "https://u.expo.dev/4d3a4126-8aa0-465d-a055-f3e5fe7d1b0d"
     }
   }
 }

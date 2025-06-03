@@ -107,7 +107,7 @@ const TransactionDetailScreen = () => {
 
   const handleEdit = () => {
     if (transaction) {
-      router.push({
+      router.replace({
         pathname: "/transaction/edit/[id]",
         params: { id: transaction.id, transactionData: JSON.stringify(transaction) },
       });
