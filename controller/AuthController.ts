@@ -9,6 +9,7 @@ export interface SignUpFormData {
     firstName: string,
     lastName: string,
     password: string,  
+    confirmPassword: string; 
 }
 
 // Updated interface to include email
