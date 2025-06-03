@@ -120,7 +120,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, activeFilter = 'Dai
                     yAxisTextStyle={{ 
                         color: 'gray',
                         fontSize: 10,
-                        width: 50, // Add explicit width for Y-axis labels
+                        width: 40, // Add explicit width for Y-axis labels
                     }}
                     xAxisLabelTextStyle={{ 
                         color: 'gray', 

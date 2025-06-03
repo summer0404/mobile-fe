@@ -19,7 +19,7 @@ const HomeHeader = ({ firstName, lastName }: HomeHeaderProps) => {
         <Text className="text-2xl font-pbold text-white">
           Hi, Welcome Back
         </Text>
-        <Text className="text-sm text-white font-pmedium">Good Morning</Text>
+        <Text className="text-sm text-white font-pmedium">Ready to track your finances?</Text>
       </View>
        <TouchableOpacity onPress={handleAvatarPress}>
       <InitialsAvatar firstName={firstName} lastName={lastName} size={30} fontSize={12} />
