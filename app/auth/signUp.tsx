@@ -101,12 +101,13 @@ export default function SignUp() {
       return;
     }
 
-    // Remove confirmPassword for API call - only send what API expects
-    const signUpData: Omit<SignUpFormData, 'confirmPassword'> = {
+    // Include confirmPassword in API call
+    const signUpData: SignUpFormData = {
       email: form.email,
       firstName: form.firstName,
       lastName: form.lastName,
       password: form.password,
+      confirmPassword: form.confirmPassword, // Include confirm password
     };
 
     handleSignUp(

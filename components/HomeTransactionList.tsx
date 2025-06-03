@@ -91,6 +91,11 @@ const getBackgroundColor = (iconColor: string): string => {
     'bg-indigo-100': '#eef2ff',
     'bg-orange-100': '#fff7ed',
     'bg-gray-100': '#f3f4f6',
+    'bg-slate-100': '#f1f5f9',
+    'bg-cyan-100': '#ecfeff',
+    'bg-rose-100': '#fff1f2',
+    'bg-teal-100': '#f0fdfa',
+    'bg-amber-100': '#fef3c7',
     // Add more colors as needed
   };
   
@@ -98,21 +103,36 @@ const getBackgroundColor = (iconColor: string): string => {
 };
 
 const getIconColor = (iconTextColor?: string): string => {
-  // Map Tailwind text colors to actual colors
+  // Map Tailwind text colors to actual colors - Updated to -500 variants
   const colorMap: { [key: string]: string } = {
+    // Updated from -600 to -500 variants
+    'text-red-500': '#ef4444',
+    'text-green-500': '#22c55e', 
+    'text-green-600': '#16a34a', // Keep this for income
+    'text-blue-500': '#3b82f6',
+    'text-blue-600': '#2563eb', // Keep this for time display
+    'text-yellow-500': '#eab308',
+    'text-purple-500': '#a855f7',
+    'text-pink-500': '#ec4899',
+    'text-indigo-500': '#6366f1',
+    'text-orange-500': '#f97316',
+    'text-gray-500': '#6b7280',
+    'text-slate-500': '#64748b',
+    'text-cyan-500': '#06b6d4',
+    'text-rose-500': '#f43f5e',
+    'text-teal-500': '#14b8a6',
+    'text-amber-500': '#f59e0b',
+    
     'text-red-600': '#dc2626',
-    'text-green-600': '#16a34a',
-    'text-blue-600': '#2563eb',
     'text-yellow-600': '#ca8a04',
     'text-purple-600': '#9333ea',
     'text-pink-600': '#db2777',
     'text-indigo-600': '#4f46e5',
     'text-orange-600': '#ea580c',
     'text-gray-600': '#4b5563',
-    // Add more colors as needed
   };
   
-  return colorMap[iconTextColor || ''] || '#4b5563'; // Default to gray if not found
+  return colorMap[iconTextColor || ''] || '#6b7280'; // Default to gray-500 if not found
 };
 
 export default HomeTransactionList;

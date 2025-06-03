@@ -38,7 +38,7 @@ const getMonthIndex = (monthName: string): number => {
 const TransactionListItem: React.FC<{ item: TransactionItemData }> = ({ item }) => {
     const router = useRouter();
     const handlePress = () => {
-        router.push({
+        router.replace({
             pathname: `/transaction/[id]`,
             params: { id: String(item.id), transactionData: JSON.stringify(item) },
         });

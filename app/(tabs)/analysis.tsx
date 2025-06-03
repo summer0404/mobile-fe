@@ -11,60 +11,78 @@ import { StatusBar } from 'expo-status-bar';
 import { getMe } from '@/services/authService';
 import { getAllTransactions, Transaction, GetAllTransactionsParams, TransactionType } from '@/services/transactionsService';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Helper to define date ranges based on filter
-const getFilterDateRange = (filter: string): { startDate: Date, endDate: Date, periodLabelFormat: 'day' | 'week' | 'month' } => {
-  const today = new Date();
-  let startDate = new Date();
-  let endDate = new Date(today); // End of today for most cases
-  endDate.setHours(23, 59, 59, 999);
-
+const getFilterDateRange = (filter: string): { startDate: Date, endDate: Date, periodLabelFormat: 'day' | 'week' | 'month' | 'year' } => {
+  const now = new Date();
+  let startDate: Date;
+  let endDate: Date;
+  let periodLabelFormat: 'day' | 'week' | 'month' | 'year';
 
   switch (filter) {
     case 'Daily': // Last 7 days
-      startDate.setDate(today.getDate() - 6);
-      startDate.setHours(0, 0, 0, 0);
-      return { startDate, endDate, periodLabelFormat: 'day' };
-    case 'Weekly': // Last 4 weeks (current week Mon to Sun + 3 previous full weeks Mon to Sun)
-      startDate = new Date(today);
-      // Set to Monday of the current week
-      startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1));
-      startDate.setDate(startDate.getDate() - (3 * 7)); // Go back 3 more weeks
-      startDate.setHours(0, 0, 0, 0);
-      return { startDate, endDate, periodLabelFormat: 'week' };
-    case 'Monthly': // Last 6 months (current month + 5 previous full months)
-      startDate = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-      startDate.setHours(0,0,0,0);
-      return { startDate, endDate, periodLabelFormat: 'month' };
-    case 'Year': // Current year, data aggregated by month
-      startDate = new Date(today.getFullYear(), 0, 1); // Jan 1st of current year
-      startDate.setHours(0,0,0,0);
-      return { startDate, endDate, periodLabelFormat: 'month' }; // Use month for yearly aggregation
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      periodLabelFormat = 'day';
+      break;
+    case 'Weekly': // Last 4 weeks (28 days)
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 27, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      periodLabelFormat = 'week';
+      break;
+    case 'Monthly': // Last 4 months (including current month)
+      // Go back 3 months from current month (3 months ago + current = 4 months)
+      startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59); // End of current month
+      periodLabelFormat = 'month';
+      break;
+    case 'Yearly': // Last 4 years
+      startDate = new Date(now.getFullYear() - 3, 0, 1, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+      periodLabelFormat = 'year';
+      break;
     default:
-      startDate.setDate(today.getDate() - 6);
-      startDate.setHours(0, 0, 0, 0);
-      return { startDate, endDate, periodLabelFormat: 'day' };
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      periodLabelFormat = 'month';
   }
+
+  console.log(`=== ${filter} Date Range ===`);
+  console.log('Start:', startDate.toISOString());
+  console.log('End:', endDate.toISOString());
+  console.log('Start timestamp:', startDate.getTime());
+  console.log('End timestamp:', endDate.getTime());
+  
+  return { startDate, endDate, periodLabelFormat };
 };
 
-// Helper to get a consistent key for a period
-const getPeriodKey = (date: Date, periodType: 'day' | 'week' | 'month'): string => {
-  const d = new Date(date);
+// Replace the getPeriodKey function:
+const getPeriodKey = (date: Date, periodType: 'day' | 'week' | 'month' | 'year'): string => {
+  const transactionDate = new Date(date);
+  
   switch (periodType) {
     case 'day':
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return transactionDate.toISOString().split('T')[0]; // YYYY-MM-DD
     case 'week':
-      const dayOfWeek = d.getDay();
-      const diff = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
-      const monday = new Date(d.getFullYear(), d.getMonth(), diff);
-      return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+      // Get Monday of the week containing this date
+      const dayOfWeek = transactionDate.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Sunday = 0, Monday = 1
+      const monday = new Date(transactionDate);
+      monday.setDate(transactionDate.getDate() + mondayOffset);
+      monday.setHours(0, 0, 0, 0); // Reset time to start of day
+      return monday.toISOString().split('T')[0]; // Use Monday as week key
     case 'month':
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+    case 'year':
+      return transactionDate.getFullYear().toString(); // YYYY
+    default:
+      return transactionDate.toISOString().split('T')[0];
   }
 };
 
 const Analysis = () => {
-  const filters = ['Daily', 'Weekly', 'Monthly', 'Year'];
+  const filters = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
   const [activeFilter, setActiveFilter] = useState('Weekly'); // Default to weekly
   const router = useRouter();
 
@@ -118,10 +136,9 @@ const Analysis = () => {
 
     try {
       const params: GetAllTransactionsParams = {
-        // userId: currentUserId,
         createFrom: startDate.getTime().toString(),
         createTo: endDate.getTime().toString(),
-        limit: 10000, // Fetch a large number for the period
+        limit: 10000,
       };
       
       const response = await getAllTransactions(params);
@@ -139,6 +156,7 @@ const Analysis = () => {
       }
 
       const transactions = response.data?.items || [];
+      console.log('Raw transactions:', transactions.length);
 
       // Process for HomeOverview
       let totalIncomePeriod = 0;
@@ -154,65 +172,91 @@ const Analysis = () => {
           periodExpenseCategories[t.type] = (periodExpenseCategories[t.type] || 0) + Math.abs(amount);
         }
       });
+
       setOverviewData({
         totalIncome: totalIncomePeriod,
         totalExpenses: totalExpensesPeriod,
         balance: totalIncomePeriod - totalExpensesPeriod,
       });
+
       setExpenseCategories(
         Object.entries(periodExpenseCategories)
           .map(([name, totalAmount]) => ({ name, totalAmount }))
           .sort((a, b) => b.totalAmount - a.totalAmount)
       );
 
-      // Process for AnalysisChart
+      // **FIXED CHART DATA PROCESSING**
       const groupedData: Record<string, { income: number, expense: number, date: Date }> = {};
       
-      // Initialize periods within the range to ensure all labels appear
-      let currentDate = new Date(startDate);
-      while(currentDate <= endDate) {
-          const key = getPeriodKey(currentDate, periodLabelFormat);
-          if (!groupedData[key]) {
-              groupedData[key] = { income: 0, expense: 0, date: new Date(currentDate) };
-          }
-          if (periodLabelFormat === 'day') currentDate.setDate(currentDate.getDate() + 1);
-          else if (periodLabelFormat === 'week') currentDate.setDate(currentDate.getDate() + 7);
-          else if (periodLabelFormat === 'month') currentDate.setMonth(currentDate.getMonth() + 1);
-          else break; // Should not happen with current periodLabelFormats
-      }
+      // Initialize all periods in the range
+      const periods = generatePeriods(startDate, endDate, periodLabelFormat);
+      periods.forEach(period => {
+        const key = getPeriodKey(period, periodLabelFormat);
+        groupedData[key] = { income: 0, expense: 0, date: new Date(period) };
+      });
 
+      console.log('Initialized periods:', Object.keys(groupedData));
 
+      // Group transactions by period
       transactions.forEach(t => {
+        const transactionDate = new Date(t.date);
         const amount = parseFloat(String(t.amount) || '0');
-        const key = getPeriodKey(new Date(t.date), periodLabelFormat); // Group by transaction date
-        if (groupedData[key]) { // Ensure key exists (it should due to pre-population)
-            if (t.type === 'income' || t.type === 'lend') {
-                groupedData[key].income += amount;
-            } else {
-                groupedData[key].expense += Math.abs(amount);
-            }
+        const key = getPeriodKey(transactionDate, periodLabelFormat);
+        
+        if (groupedData[key]) {
+          if (t.type === 'income' || t.type === 'lend') {
+            groupedData[key].income += amount;
+          } else {
+            groupedData[key].expense += Math.abs(amount);
+          }
         }
       });
-      
-      const newChartData: any[] = [];
-      Object.keys(groupedData).sort((a,b) => groupedData[a].date.getTime() - groupedData[b].date.getTime()).forEach(key => {
-        const item = groupedData[key];
-        let label = '';
-        if (periodLabelFormat === 'day') {
-            label = item.date.toLocaleDateString('en-US', { weekday: 'short' }); // Specify locale
-        } else if (periodLabelFormat === 'week') {
-            const weekStart = new Date(item.date);
-             // Ensure it's Monday for label consistency
-            weekStart.setDate(item.date.getDate() - (item.date.getDay() === 0 ? 6 : item.date.getDay() -1));
-            label = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`; // Specify locale
-        } else if (periodLabelFormat === 'month') {
-            label = item.date.toLocaleDateString('en-US', { month: 'short' }); // Specify locale
-        }
 
-        newChartData.push({ value: item.income / 1000, label: label, frontColor: '#00D09E', spacing: 2, labelWidth: 40 }); // Income (in K)
-        newChartData.push({ value: item.expense / 1000, frontColor: '#0068FF' }); // Expense (in K)
+      console.log('Grouped data after processing:', groupedData);
+
+      // Convert to chart format
+      const newChartData: any[] = [];
+      const sortedKeys = Object.keys(groupedData).sort((a, b) => 
+        groupedData[a].date.getTime() - groupedData[b].date.getTime()
+      );
+
+      sortedKeys.forEach((key, index) => {
+        const item = groupedData[key];
+        const label = formatPeriodLabel(item.date, periodLabelFormat);
+        
+        // Determine spacing based on active filter
+        const getSpacing = (isLastPair: boolean) => {
+          if (activeFilter === 'Weekly') {
+            return isLastPair ? 4 : 25; // Match AnalysisChart.tsx
+          } else if (activeFilter === 'Daily') {
+            return isLastPair ? 2 : 8;
+          } else if (activeFilter === 'Yearly') {
+            return isLastPair ? 4 : 30;
+          } else { // Monthly
+            return isLastPair ? 2 : 15;
+          }
+        };
+        
+        // Add income bar
+        newChartData.push({
+          value: Math.round((item.income / 1000) * 100) / 100,
+          label: label,
+          frontColor: '#00D09E',
+          spacing: 2,
+          labelWidth: activeFilter === 'Weekly' ? 40 : 50, // Adjust label width
+        });
+        
+        // Add expense bar (paired with income)
+        newChartData.push({
+          value: Math.round((item.expense / 1000) * 100) / 100,
+          frontColor: '#0068FF',
+          spacing: getSpacing(index >= sortedKeys.length - 1),
+        });
       });
+
+      console.log('Final chart data:', newChartData);
       setChartData(newChartData);
+
     } catch (e: any) {
       if (e.response?.status === 401) {
         router.replace('/auth/signIn');
@@ -235,6 +279,8 @@ const Analysis = () => {
       }
     }, [currentUserId, fetchAnalysisData])
   );
+
+  const insets = useSafeAreaInsets();
 
   if (isLoadingUserId) {
     return (
@@ -274,10 +320,13 @@ const Analysis = () => {
         ) : (
           <ScrollView 
             className="flex-1" 
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+            contentContainerStyle={{ 
+              paddingHorizontal: 24, 
+              paddingBottom: insets.bottom + 100 // Safe area padding
+            }}
             showsVerticalScrollIndicator={false}
           >
-            <AnalysisChart data={chartData} /> 
+            <AnalysisChart data={chartData} activeFilter={activeFilter} /> 
            
             {/* <IncomeExpense 
             // categories={expenseCategories}
@@ -290,3 +339,75 @@ const Analysis = () => {
 }
 
 export default Analysis;
+
+// **ADD THESE HELPER FUNCTIONS**
+
+// Generate periods between start and end dates
+const generatePeriods = (startDate: Date, endDate: Date, periodType: 'day' | 'week' | 'month' | 'year'): Date[] => {
+  const periods: Date[] = [];
+  let currentDate = new Date(startDate);
+  
+  console.log(`Generating periods for ${periodType} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+  
+  switch (periodType) {
+    case 'day':
+      currentDate.setHours(0, 0, 0, 0); // Start of day
+      while (currentDate <= endDate) {
+        periods.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      break;
+      
+    case 'week':
+      // Find the Monday of the first week
+      const firstDayOfWeek = currentDate.getDay();
+      const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
+      currentDate.setDate(currentDate.getDate() + mondayOffset);
+      currentDate.setHours(0, 0, 0, 0);
+      
+      while (currentDate <= endDate) {
+        periods.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 7); // Move to next Monday
+      }
+      break;
+      
+    case 'month':
+      // Start from the first day of the start month
+      currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1, 0, 0, 0);
+      while (currentDate <= endDate) {
+        periods.push(new Date(currentDate));
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+      break;
+      
+    case 'year':
+      // Start from January 1st of the start year
+      currentDate = new Date(currentDate.getFullYear(), 0, 1, 0, 0, 0);
+      while (currentDate <= endDate) {
+        periods.push(new Date(currentDate));
+        currentDate.setFullYear(currentDate.getFullYear() + 1);
+      }
+      break;
+  }
+  
+  console.log(`Generated ${periods.length} periods:`, periods.map(p => getPeriodKey(p, periodType)));
+  return periods;
+};
+
+// Update formatPeriodLabel function:
+const formatPeriodLabel = (date: Date, periodType: 'day' | 'week' | 'month' | 'year'): string => {
+  switch (periodType) {
+    case 'day':
+      return date.toLocaleDateString('en-US', { weekday: 'short' });
+    case 'week':
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - (date.getDay() === 0 ? 6 : date.getDay() - 1));
+      return weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    case 'month':
+      return date.toLocaleDateString('en-US', { month: 'short' });
+    case 'year':
+      return date.getFullYear().toString();
+    default:
+      return '';
+  }
+};

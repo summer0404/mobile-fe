@@ -69,38 +69,68 @@ const getHomeIconStyle = (apiType: ApiUITransactionType, amount: number): { icon
     if (uiType === 'income') {
         iconColor = 'bg-green-100';
         iconTextColor = 'text-green-600';
-    } else { // Expense types
+    } else { // Expense types - MATCHING CATEGORIES.TS COLORS
         switch (apiType) {
             case 'food':
-            case 'groceries':
                 iconColor = 'bg-orange-100';
-                iconTextColor = 'text-orange-600';
+                iconTextColor = 'text-orange-500'; // Changed from text-orange-600 to match categories
+                break;
+            case 'groceries':
+                iconColor = 'bg-green-100';
+                iconTextColor = 'text-green-500'; // Changed from text-orange-600 to match categories
                 break;
             case 'transport':
                 iconColor = 'bg-blue-100';
-                iconTextColor = 'text-blue-600';
-                break;
-            case 'shopping':
-                iconColor = 'bg-purple-100';
-                iconTextColor = 'text-purple-600';
-                break;
-            case 'bill':
-            case 'home':
-                iconColor = 'bg-yellow-100';
-                iconTextColor = 'text-yellow-600';
-                break;
-            case 'entertainment':
-                iconColor = 'bg-pink-100';
-                iconTextColor = 'text-pink-600';
+                iconTextColor = 'text-blue-500'; // Changed from text-blue-600 to match categories
                 break;
             case 'health':
                 iconColor = 'bg-red-100';
-                iconTextColor = 'text-red-600';
+                iconTextColor = 'text-red-500'; // Changed from text-red-600 to match categories
                 break;
-            // Add more specific cases if needed
-            default: // General expense
+            case 'education':
+                iconColor = 'bg-cyan-100';
+                iconTextColor = 'text-cyan-500'; // Changed to match categories
+                break;
+            case 'shopping':
+                iconColor = 'bg-pink-100';
+                iconTextColor = 'text-pink-500'; // Changed from text-purple-600 to match categories
+                break;
+            case 'entertainment':
+                iconColor = 'bg-purple-100';
+                iconTextColor = 'text-purple-500'; // Changed from text-pink-600 to match categories
+                break;
+            case 'beauty':
+                iconColor = 'bg-rose-100';
+                iconTextColor = 'text-rose-500'; // Matches categories
+                break;
+            case 'vacation':
+                iconColor = 'bg-teal-100';
+                iconTextColor = 'text-teal-500'; // Changed from text-sky-600 to match categories
+                break;
+            case 'bill':
+                iconColor = 'bg-indigo-100';
+                iconTextColor = 'text-indigo-500'; // Changed from text-yellow-600 to match categories
+                break;
+            case 'home':
+                iconColor = 'bg-amber-100';
+                iconTextColor = 'text-amber-500'; // Changed from text-yellow-600 to match categories
+                break;
+            case 'other':
                 iconColor = 'bg-gray-100';
-                iconTextColor = 'text-gray-600';
+                iconTextColor = 'text-gray-500'; // Changed from text-gray-600 to match categories
+                break;
+            // Handle borrow and lend
+            case 'borrow':
+                iconColor = 'bg-slate-100';
+                iconTextColor = 'text-slate-500'; // Changed to 500 for consistency
+                break;
+            case 'lend':
+                iconColor = 'bg-green-100';
+                iconTextColor = 'text-green-500'; // Changed to match income style
+                break;
+            default: // Fallback for any unhandled types
+                iconColor = 'bg-gray-100';
+                iconTextColor = 'text-gray-500'; // Changed to 500 for consistency
                 break;
         }
     }

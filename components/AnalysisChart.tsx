@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native'
+import { View, Text, TouchableOpacity, useWindowDimensions, Dimensions } from 'react-native'
 import React from 'react'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { BarChart } from 'react-native-gifted-charts'
@@ -15,83 +15,157 @@ type ChartDataItem = {
 
 type AnalysisChartProps = {
     data: ChartDataItem[];
-    // You could also pass maxValue as a prop if it needs to be dynamic
-    // maxValue?: number; 
+    activeFilter?: string; // Add this to know which filter is active
 };
 
-const AnalysisChart: React.FC<AnalysisChartProps> = ({ data /*, maxValue = 120 */ }) => {
-    // Use useWindowDimensions hook for responsive sizing
-    const { width } = useWindowDimensions();
+const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, activeFilter = 'Daily' }) => {
+    // Check for empty data
+    if (!data || data.length === 0) {
+        return (
+            <View className="mt-6 p-4 bg-violet-200 rounded-2xl shadow-md">
+                <View className="flex-row justify-between items-center mb-4">
+                    <Text className="text-lg font-psemibold text-black">Income & Expenses</Text>
+                </View>
+                <View className="items-center justify-center h-40">
+                    <Text className="text-gray-500 text-center">No data available for the selected period</Text>
+                </View>
+            </View>
+        );
+    }
+
+    const chartWidth = Dimensions.get('window').width - 80;
     
-    // More conservative width calculation to prevent overflow
-    // Adding extra margin for x-axis labels and padding
-    const chartWidth = width - 120; 
+    // Calculate max value from the actual data (values are already in thousands)
+    const maxDataValue = Math.max(...data.map(item => item.value || 0));
     
-    // Determine a dynamic maxValue if not passed or if data exceeds current maxValue
-    // This is a simple approach; you might want a more sophisticated one
-    const calculatedMaxValue = React.useMemo(() => {
-        if (!data || data.length === 0) return 120; // Default if no data
-        const maxValInData = Math.max(...data.map(item => item.value), 0);
-        return Math.ceil(Math.max(maxValInData, 10) / 10) * 10 + 10; // Ensure it's a bit higher than max value, rounded up
-    }, [data]);
+    // Set appropriate max value with some padding
+    const calculatedMaxValue = Math.max(
+        Math.ceil(maxDataValue * 1.2), // Add 20% padding
+        5 // Minimum value of 5k to ensure chart is readable
+    );
+
+    console.log(`Chart maxValue calculation for ${activeFilter}:`, {
+        maxDataValue,
+        calculatedMaxValue,
+        dataCount: data.length
+    });
+
+    const getChartConfig = () => {
+        switch (activeFilter) {
+            case 'Daily':
+                return {
+                    barWidth: 12,
+                    spacing: 8,
+                    chartWidth: chartWidth
+                };
+            case 'Weekly':
+                return {
+                    barWidth: 8,
+                    spacing: 20,
+                    chartWidth: chartWidth + 80 // More space for weekly labels
+                };
+            case 'Monthly':
+                return {
+                    barWidth: 15,
+                    spacing: 12,
+                    chartWidth: chartWidth
+                };
+            case 'Yearly':
+                return {
+                    barWidth: 16,
+                    spacing: 25,
+                    chartWidth: chartWidth + 60
+                };
+            default:
+                return {
+                    barWidth: 10,
+                    spacing: 14,
+                    chartWidth: chartWidth
+                };
+        }
+    };
+
+    const chartConfig = getChartConfig();
 
     return (
         <View className="mt-6 p-4 bg-violet-200 rounded-2xl shadow-md">
-            <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-lg font-psemibold text-black">Income & Expenses</Text>
+            <View className="mb-4">
+                {/* Title on its own line */}
+                <Text className="text-lg font-psemibold text-black mb-3">Income & Expenses</Text>
                 
-                {/* <View className="flex-row space-x-2">
-                    <TouchableOpacity className="p-1.5 rounded-lg">
-                        <MaterialCommunityIcons name="magnify" size={20} color="rgb(106, 13, 173)" />
-                    </TouchableOpacity>
-                    <TouchableOpacity className="p-1.5 rounded-lg">
-                        <MaterialCommunityIcons name="calendar-month-outline" size={20} color="rgb(106, 13, 173)" />
-                    </TouchableOpacity>
-                </View> */}
-            </View>
-
-            {/* Legend */}
-            <View className="flex-row justify-center mb-4">
+                {/* Legend on separate line */}
                 <View className="flex-row items-center">
-                    <View className="w-3 h-3 rounded-full bg-[#00D09E] mr-2" />
-                    <Text className="text-xs text-gray-700">Income</Text>
-                </View>
-                <View className="flex-row items-center ml-5">
-                    <View className="w-3 h-3 rounded-full bg-[#0068FF] mr-2" />
-                    <Text className="text-xs text-gray-700">Expenses</Text>
+                    <View className="flex-row items-center">
+                        <View className="w-3 h-3 bg-green-400 rounded-full mr-2" />
+                        <Text className="text-xs text-gray-600">Income</Text>
+                    </View>
+                    <View className="flex-row items-center ml-6">
+                        <View className="w-3 h-3 bg-blue-500 rounded-full mr-2" />
+                        <Text className="text-xs text-gray-600">Expenses</Text>
+                    </View>
                 </View>
             </View>
 
-            {/* Chart with overflow hidden */}
             <View style={{ width: '100%', alignItems: 'center', overflow: 'hidden' }}>
                 <BarChart
-                    data={data} // Use the data prop here
-                    barWidth={10}
-                    spacing={14} // Reduced spacing
+                    data={data}
+                    barWidth={chartConfig.barWidth}
+                    spacing={chartConfig.spacing}
                     roundedTop
                     hideRules
-                    width={chartWidth}
+                    width={chartConfig.chartWidth}
+                    height={250} // Add explicit height
                     xAxisThickness={1}
                     yAxisThickness={1}
-                    yAxisTextStyle={{ color: 'gray' }}
-                    xAxisLabelTextStyle={{ color: 'gray', textAlign: 'center', fontSize: 10 }}
+                    yAxisTextStyle={{ 
+                        color: 'gray',
+                        fontSize: 10,
+                        width: 50, // Add explicit width for Y-axis labels
+                    }}
+                    xAxisLabelTextStyle={{ 
+                        color: 'gray', 
+                        textAlign: 'center', 
+                        fontSize: (() => {
+                            switch (activeFilter) {
+                                case 'Weekly': return 9;
+                                case 'Yearly': return 11;
+                                default: return 10;
+                            }
+                        })(),
+                        marginHorizontal: activeFilter === 'Weekly' ? 4 : 0,
+                        paddingHorizontal: activeFilter === 'Weekly' ? 2 : 0
+                    }}
                     noOfSections={5}
-                    maxValue={calculatedMaxValue} // Use the dynamic or passed maxValue
-                    disableScroll={true}
+                    maxValue={calculatedMaxValue}
+                    disableScroll={activeFilter === 'Daily' || activeFilter === 'Monthly'}
                     yAxisLabelPrefix=""
                     yAxisLabelSuffix="k"
-                    // Add horizontal padding to prevent overflow
+                    yAxisLabelWidth={50} // Specific width for label text
+                    leftShiftForTooltip={10} // Adjust tooltip position
+                    leftShiftForLastIndexTooltip={10}
                     horizontalRulesStyle={{ paddingRight: 10 }}
+                    initialSpacing={(() => {
+                        switch (activeFilter) {
+                            case 'Weekly': return 20; // Increased from 15
+                            case 'Yearly': return 25; // Increased from 20
+                            default: return 15; // Increased from 10
+                        }
+                    })()}
                     renderTooltip={(
-                        item: ChartDataItem, // Use the defined ChartDataItem type
+                        item: ChartDataItem,
                         index: number
                     ): React.ReactNode => {
                         return (
-                            <View className="bg-gray-800 p-2 rounded">
-                                <Text className="text-white text-xs">
-                                    {/* Assuming income is always even index and expense is odd */}
-                                    {/* This logic depends on how data is structured in Analysis.tsx */}
-                                    {index % 2 === 0 ? 'Income: ' : 'Expense: '}{item.value}k
+                            <View style={{
+                                marginBottom: 20,
+                                marginLeft: -6,
+                                backgroundColor: '#ffcefe',
+                                paddingHorizontal: 6,
+                                paddingVertical: 4,
+                                borderRadius: 4,
+                            }}>
+                                <Text style={{ color: 'black', fontSize: 12 }}>
+                                    {(item.value * 1000).toLocaleString()}
                                 </Text>
                             </View>
                         );
@@ -99,7 +173,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data /*, maxValue = 120 *
                 />
             </View>
         </View>
-    )
-}
+    );
+};
 
 export default AnalysisChart;

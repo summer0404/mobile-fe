@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/utils/theme";
 import { handleAddDebt } from "../../controller/DebtController";
 import { TransactionStatus, TransactionType } from "@/constants/enum";
+import GoBackToHomeHeader from "@/components/GoBackToHomeHeader";
 
 export default function AddDebt() {
   const router = useRouter();
@@ -106,14 +107,9 @@ export default function AddDebt() {
 
   return (
     <ScrollView style={styles.container} nestedScrollEnabled={true}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Add Debt</Text>
-        <Ionicons name="notifications" size={24} color="#fff" />
+      <View className="p-6">
+        <GoBackToHomeHeader title="Add Debt" />
       </View>
-
       <View style={styles.content}>
         <Text style={styles.label}>Name</Text>
         <TextInput
